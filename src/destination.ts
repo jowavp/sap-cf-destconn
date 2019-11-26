@@ -17,7 +17,7 @@ export interface IDestinationData {
         SubaccountId: string;
         InstanceId: string;
     },
-    destinationConfiguration: IDestinationConfiguration,
+    destinationConfiguration: IHTTPDestinationConfiguration | IMailDestinationConfiguration,
     authTokens:
     {
         type: string;
@@ -30,6 +30,9 @@ export interface IDestinationData {
 export interface IDestinationConfiguration {
     Name: string;
     Type: string;
+}
+
+export interface IHTTPDestinationConfiguration extends IDestinationConfiguration  {
     URL: string;
     Authentication: "NoAuthentication" | "BasicAuthentication" | "OAuth2UserTokenExchange" | "OAuth2SAMLBearerAssertion" | "PrincipalPropagation" | "OAuth2ClientCredentials";
     ProxyType: string;
@@ -48,6 +51,14 @@ export interface IDestinationConfiguration {
     WebIDEUsage: string;
     WebIDEEnabled: string;
 
+}
+
+export interface IMailDestinationConfiguration extends IDestinationConfiguration {
+    "mail.password": string;
+    "mail.user": string;
+    "mail.smtp"?: string;
+    "mail.port"?: string;
+    "mail.from"?: string;
 }
 
 export interface IDestinationService {
