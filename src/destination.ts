@@ -2,22 +2,23 @@
 import axios from 'axios';
 import * as xsenv from '@sap/xsenv';
 
-export async function readDestination(destinationName: string, authorizationHeader?: string) {
+
+export async function readDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string) {
 
     const access_token = await createToken(getService());
 
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
     const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : null;
-    return getDestination(access_token, destinationName, getService(), jwtToken);
+    return getDestination<T>(access_token, destinationName, getService(), jwtToken);
 
 }
 
-export interface IDestinationData {
+export interface IDestinationData<T extends IDestinationConfiguration> {
     owner: {
         SubaccountId: string;
         InstanceId: string;
     },
-    destinationConfiguration: IHTTPDestinationConfiguration | IMailDestinationConfiguration,
+    destinationConfiguration: T,
     authTokens:
     {
         type: string;
@@ -70,31 +71,42 @@ export interface IDestinationService {
     clientsecret: string;
 }
 
-async function getDestination(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null): Promise<IDestinationData> {
-    const response = await axios({
-        url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${access_token}`,
-            'X-user-token': jwtToken
-        },
-        responseType: 'json',
-    });
-    return response.data;
+async function getDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null): Promise<IDestinationData<T>> {
+    try{
+        const response = await axios({
+            url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'X-user-token': jwtToken
+            },
+            responseType: 'json',
+        });
+        return response.data;
+    } catch(e) {
+        console.error(`Unable to read the destination ${destinationName}`, e)
+        throw e;
+    }
 }
 
 async function createToken(ds: IDestinationService): Promise<string> {
-    return (await axios({
-        url: `${ds.url}/oauth/token`,
-        method: 'POST',
-        responseType: 'json',
-        data: `client_id=${encodeURIComponent(ds.clientid)}&grant_type=client_credentials`,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        auth: {
-            username: ds.clientid,
-            password: ds.clientsecret
-        }
-    })).data.access_token;
+    try{
+        const response =  await axios({
+            url: `${ds.url}/oauth/token`,
+            method: 'POST',
+            responseType: 'json',
+            data: `client_id=${encodeURIComponent(ds.clientid)}&grant_type=client_credentials`,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            auth: {
+                username: ds.clientid,
+                password: ds.clientsecret
+            }
+        })
+        return response.data.access_token;
+    } catch (e) {
+        console.error('unable to fetch oauth token for destination service', e);
+        throw e;
+    }
 };
 
 function getService(): IDestinationService {
