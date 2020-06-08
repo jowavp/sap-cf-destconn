@@ -29,6 +29,9 @@ export interface IHTTPDestinationConfiguration extends IDestinationConfiguration
     saml2_audience: string;
     tokenServiceURL: string;
     clientSecret: string;
+    scope?: string;
+    Scope?: string;
+    oauth_audience?: string;
     WebIDEUsage: string;
     WebIDEEnabled: string;
 }

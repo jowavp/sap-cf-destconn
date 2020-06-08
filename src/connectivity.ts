@@ -1,5 +1,8 @@
 import axios, { AxiosProxyConfig } from 'axios';
 import * as xsenv from '@sap/xsenv';
+import * as tokenCache from './tokenCache';
+
+var tokens = {};
 
 export interface IConnectivityConfig {
     proxy: AxiosProxyConfig,
@@ -49,7 +52,15 @@ export async function readConnectivity(locationId?: string, principalToken?: str
 }
 
 async function createToken(service: IConnectivityService, principalToken?: string): Promise<string> {
+    const cacheKey = `${service.clientid}__${principalToken}`;
+    const cachedToken = tokenCache.getToken(cacheKey);
+
+    if(cachedToken) {
+        return cachedToken.access_token;
+    }
+    
     if (principalToken) {
+        
         const refreshToken = (await axios({
             url: `${service.url}/oauth/token`,
             method: 'POST',
@@ -65,7 +76,7 @@ async function createToken(service: IConnectivityService, principalToken?: strin
             },
 
         })).data.refresh_token;
-        return (await axios({
+        const token = (await axios({
             url: `${service.url}/oauth/token`,
             method: 'POST',
             responseType: 'json',
@@ -81,8 +92,10 @@ async function createToken(service: IConnectivityService, principalToken?: strin
                 password: service.clientsecret
             }
         })).data.access_token;
+        tokenCache.setToken(cacheKey, token)
+        return token;
     }
-    return (await axios({
+    const token2 = (await axios({
         url: `${service.url}/oauth/token`,
         method: 'POST',
         responseType: 'json',
@@ -93,6 +106,8 @@ async function createToken(service: IConnectivityService, principalToken?: strin
             password: service.clientsecret
         }
     })).data.access_token;
+    tokenCache.setToken(cacheKey, token2)
+    return token2;
 };
 
 function getService(): IConnectivityService {

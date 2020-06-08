@@ -1,7 +1,13 @@
 
-import axios from 'axios';
+import axios, { AxiosPromise } from 'axios';
 import * as xsenv from '@sap/xsenv';
+import * as tokenCache from './tokenCache';
 
+
+const tokens: {[clientid: string]: {
+    validUntil: Date,
+    value: any
+}} = {};
 
 export async function readDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string) {
 
@@ -48,6 +54,9 @@ export interface IHTTPDestinationConfiguration extends IDestinationConfiguration
     saml2_audience: string;
     tokenServiceURL: string;
     clientSecret: string;
+    scope?: string;
+    Scope?: string;
+    oauth_audience?: string;
 
     WebIDEUsage: string;
     WebIDEEnabled: string;
@@ -91,18 +100,25 @@ async function getDestination<T extends IDestinationConfiguration>(access_token:
 
 async function createToken(ds: IDestinationService): Promise<string> {
     try{
-        const response =  await axios({
-            url: `${ds.url}/oauth/token`,
-            method: 'POST',
-            responseType: 'json',
-            data: `client_id=${encodeURIComponent(ds.clientid)}&grant_type=client_credentials`,
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            auth: {
-                username: ds.clientid,
-                password: ds.clientsecret
-            }
-        })
-        return response.data.access_token;
+        const cacheToken = tokenCache.getToken(ds.clientid)
+
+        if(!cacheToken) {
+            const response =  await axios({
+                url: `${ds.url}/oauth/token`,
+                method: 'POST',
+                responseType: 'json',
+                data: `client_id=${encodeURIComponent(ds.clientid)}&grant_type=client_credentials`,
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                auth: {
+                    username: ds.clientid,
+                    password: ds.clientsecret
+                }
+            });
+            tokenCache.setToken(ds.clientid, response.data);
+            
+            return response.data.access_token;
+        }
+        return cacheToken.access_token;
     } catch (e) {
         console.error('unable to fetch oauth token for destination service', e);
         throw e;
