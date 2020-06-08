@@ -2,12 +2,7 @@
 import axios, { AxiosPromise } from 'axios';
 import * as xsenv from '@sap/xsenv';
 import * as tokenCache from './tokenCache';
-
-
-const tokens: {[clientid: string]: {
-    validUntil: Date,
-    value: any
-}} = {};
+import * as destinationCache from './destinationCache';
 
 export async function readDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string) {
 
@@ -81,6 +76,13 @@ export interface IDestinationService {
 }
 
 async function getDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null): Promise<IDestinationData<T>> {
+    const cacheKey = `${destinationName}__${access_token}__${jwtToken}`;
+    const cacheDest = destinationCache.get(cacheKey);
+
+    if(cacheDest) {
+        return cacheDest.value;
+    }
+
     try{
         const response = await axios({
             url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
@@ -91,6 +93,7 @@ async function getDestination<T extends IDestinationConfiguration>(access_token:
             },
             responseType: 'json',
         });
+        destinationCache.set(cacheKey, response.data)
         return response.data;
     } catch(e) {
         console.error(`Unable to read the destination ${destinationName}`, e)

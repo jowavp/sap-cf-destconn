@@ -13,15 +13,32 @@ const tokens: {[clientid: string]: {
 
 
 export function getToken(key: string){ 
+    cleanCache();
     const cacheToken = tokens[key];
-    if(cacheToken && new Date().getTime() < (cacheToken.validUntil.getTime() - 1000) ) {
+    if (cacheToken) {
         return cacheToken.value;
     }
 }
 
 export function setToken(key: string, token: IOauthToken){
-    tokens[key] = {
-        validUntil: new Date( new Date().getTime() + (token.expires_in * 1000) ),
-        value: token
-    };
+    cleanCache();
+    if(token) {
+        tokens[key] = {
+            validUntil: new Date( new Date().getTime() + (token.expires_in * 1000) ),
+            value: token
+        };
+        return token;
+    }
+}
+
+
+function cleanCache() {
+    const now = new Date().getTime() - 1000;
+    Object.entries(tokens).forEach(
+        function([key, value]) {
+            if( value.validUntil.getTime() < now ) {
+                delete tokens[key];
+            }
+        }
+    )
 }

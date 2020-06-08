@@ -21,6 +21,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const xsenv = __importStar(require("@sap/xsenv"));
+const tokenCache = __importStar(require("./tokenCache"));
+var tokens = {};
 function readConnectivity(locationId, principalToken) {
     return __awaiter(this, void 0, void 0, function* () {
         const connectivityService = getService();
@@ -45,6 +47,11 @@ function readConnectivity(locationId, principalToken) {
 exports.readConnectivity = readConnectivity;
 function createToken(service, principalToken) {
     return __awaiter(this, void 0, void 0, function* () {
+        const cacheKey = `${service.clientid}__${principalToken}`;
+        const cachedToken = tokenCache.getToken(cacheKey);
+        if (cachedToken) {
+            return cachedToken.access_token;
+        }
         if (principalToken) {
             const refreshToken = (yield axios_1.default({
                 url: `${service.url}/oauth/token`,
@@ -60,7 +67,7 @@ function createToken(service, principalToken) {
                     'Authorization': principalToken
                 },
             })).data.refresh_token;
-            return (yield axios_1.default({
+            const token = (yield axios_1.default({
                 url: `${service.url}/oauth/token`,
                 method: 'POST',
                 responseType: 'json',
@@ -76,8 +83,10 @@ function createToken(service, principalToken) {
                     password: service.clientsecret
                 }
             })).data.access_token;
+            tokenCache.setToken(cacheKey, token);
+            return token;
         }
-        return (yield axios_1.default({
+        const token2 = (yield axios_1.default({
             url: `${service.url}/oauth/token`,
             method: 'POST',
             responseType: 'json',
@@ -88,6 +97,8 @@ function createToken(service, principalToken) {
                 password: service.clientsecret
             }
         })).data.access_token;
+        tokenCache.setToken(cacheKey, token2);
+        return token2;
     });
 }
 ;
