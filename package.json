@@ -1,6 +1,6 @@
 {
   "name": "sap-cf-destconn",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "NodeJS Library that wraps the calls for the destination and connectivity service",
   "main": "dist/index.js",
   "files": [
