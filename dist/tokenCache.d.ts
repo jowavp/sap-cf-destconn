@@ -6,4 +6,4 @@ export declare type IOauthToken = {
     "jti": string;
 };
 export declare function getToken(key: string): IOauthToken | undefined;
-export declare function setToken(key: string, token: IOauthToken): void;
+export declare function setToken(key: string, token: IOauthToken): IOauthToken | undefined;

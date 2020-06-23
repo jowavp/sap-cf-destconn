@@ -23,21 +23,30 @@ const axios_1 = __importDefault(require("axios"));
 const xsenv = __importStar(require("@sap/xsenv"));
 const tokenCache = __importStar(require("./tokenCache"));
 const destinationCache = __importStar(require("./destinationCache"));
-function readDestination(destinationName, authorizationHeader) {
+function readDestination(destinationName, authorizationHeader, subscribedSubdomain) {
     return __awaiter(this, void 0, void 0, function* () {
-        const access_token = yield createToken(getService());
+        const access_token = yield createToken(getService(), subscribedSubdomain);
         // if we have a JWT token, we send it to the destination service to generate the new authorization header
         const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : null;
         return getDestination(access_token, destinationName, getService(), jwtToken);
     });
 }
 exports.readDestination = readDestination;
+function readSubaccountDestination(destinationName, authorizationHeader, subscribedSubdomain) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const access_token = yield createToken(getService(), subscribedSubdomain);
+        // if we have a JWT token, we send it to the destination service to generate the new authorization header
+        const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : null;
+        return getSubaccountDestination(access_token, destinationName, getService(), jwtToken);
+    });
+}
+exports.readSubaccountDestination = readSubaccountDestination;
 function getDestination(access_token, destinationName, ds, jwtToken) {
     return __awaiter(this, void 0, void 0, function* () {
         const cacheKey = `${destinationName}__${access_token}__${jwtToken}`;
         const cacheDest = destinationCache.get(cacheKey);
         if (cacheDest) {
-            return cacheDest.value;
+            return cacheDest;
         }
         try {
             const response = yield axios_1.default({
@@ -58,13 +67,34 @@ function getDestination(access_token, destinationName, ds, jwtToken) {
         }
     });
 }
-function createToken(ds) {
+function getSubaccountDestination(access_token, destinationName, ds, jwtToken) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const cacheToken = tokenCache.getToken(ds.clientid);
+            const response = yield axios_1.default({
+                url: `${ds.uri}/destination-configuration/v1/subaccountDestinations/${destinationName}`,
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'X-user-token': jwtToken
+                },
+                responseType: 'json',
+            });
+            return response.data;
+        }
+        catch (e) {
+            console.error(`Unable to read the subaccount destination ${destinationName}`, e);
+            throw e;
+        }
+    });
+}
+function createToken(ds, subscribedSubdomain = "") {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const cacheToken = tokenCache.getToken(`${ds.clientid}__${subscribedSubdomain}`);
             if (!cacheToken) {
+                const tokenBaseUrl = subscribedSubdomain ? `https://${subscribedSubdomain}.${ds.uaadomain}` : ds.url;
                 const response = yield axios_1.default({
-                    url: `${ds.url}/oauth/token`,
+                    url: `${tokenBaseUrl}/oauth/token`,
                     method: 'POST',
                     responseType: 'json',
                     data: `client_id=${encodeURIComponent(ds.clientid)}&grant_type=client_credentials`,

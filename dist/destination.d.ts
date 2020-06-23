@@ -1,4 +1,5 @@
-export declare function readDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string): Promise<IDestinationData<T>>;
+export declare function readDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string, subscribedSubdomain?: string): Promise<IDestinationData<T>>;
+export declare function readSubaccountDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string, subscribedSubdomain?: string): Promise<T>;
 export interface IDestinationData<T extends IDestinationConfiguration> {
     owner: {
         SubaccountId: string;
@@ -47,4 +48,5 @@ export interface IDestinationService {
     uri: string;
     clientid: string;
     clientsecret: string;
+    uaadomain: string;
 }

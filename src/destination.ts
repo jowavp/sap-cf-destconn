@@ -4,13 +4,23 @@ import * as xsenv from '@sap/xsenv';
 import * as tokenCache from './tokenCache';
 import * as destinationCache from './destinationCache';
 
-export async function readDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string) {
+export async function readDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string, subscribedSubdomain?: string) {
 
-    const access_token = await createToken(getService());
+    const access_token = await createToken(getService(), subscribedSubdomain);
 
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
     const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : null;
     return getDestination<T>(access_token, destinationName, getService(), jwtToken);
+
+}
+
+export async function readSubaccountDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string, subscribedSubdomain?: string) {
+
+    const access_token = await createToken(getService(), subscribedSubdomain);
+
+    // if we have a JWT token, we send it to the destination service to generate the new authorization header
+    const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : null;
+    return getSubaccountDestination<T>(access_token, destinationName, getService(), jwtToken);
 
 }
 
@@ -73,6 +83,7 @@ export interface IDestinationService {
     uri: string;
     clientid: string;
     clientsecret: string;
+    uaadomain: string;
 }
 
 async function getDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null): Promise<IDestinationData<T>> {
@@ -80,7 +91,7 @@ async function getDestination<T extends IDestinationConfiguration>(access_token:
     const cacheDest = destinationCache.get(cacheKey);
 
     if(cacheDest) {
-        return cacheDest.value;
+        return cacheDest;
     }
 
     try{
@@ -101,13 +112,34 @@ async function getDestination<T extends IDestinationConfiguration>(access_token:
     }
 }
 
-async function createToken(ds: IDestinationService): Promise<string> {
+async function getSubaccountDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null): Promise<T> {
     try{
-        const cacheToken = tokenCache.getToken(ds.clientid)
+        const response = await axios({
+            url: `${ds.uri}/destination-configuration/v1/subaccountDestinations/${destinationName}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'X-user-token': jwtToken
+            },
+            responseType: 'json',
+        });
+        return response.data;
+    } catch(e) {
+        console.error(`Unable to read the subaccount destination ${destinationName}`, e)
+        throw e;
+    }
+}
+
+async function createToken(ds: IDestinationService, subscribedSubdomain: string = ""): Promise<string> {
+    try{
+        const cacheToken = tokenCache.getToken(`${ds.clientid}__${subscribedSubdomain}`);
 
         if(!cacheToken) {
+
+            const tokenBaseUrl = subscribedSubdomain ? `https://${subscribedSubdomain}.${ds.uaadomain}` : ds.url;
+
             const response =  await axios({
-                url: `${ds.url}/oauth/token`,
+                url: `${tokenBaseUrl}/oauth/token`,
                 method: 'POST',
                 responseType: 'json',
                 data: `client_id=${encodeURIComponent(ds.clientid)}&grant_type=client_credentials`,

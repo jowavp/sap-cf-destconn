@@ -20,7 +20,7 @@ export function set(key: string, destination: any){
             validUntil: new Date( new Date().getTime() + cacheLifetime ),
             value: destination
         };
-        return destination[key].value;
+        return destination;
     }
 }
 

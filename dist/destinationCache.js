@@ -12,11 +12,13 @@ function get(key) {
 exports.get = get;
 function set(key, destination) {
     cleanCache();
-    destinations[key] = {
-        validUntil: new Date(new Date().getTime() + cacheLifetime),
-        value: destination
-    };
-    return destination[key].value;
+    if (destination) {
+        destinations[key] = {
+            validUntil: new Date(new Date().getTime() + cacheLifetime),
+            value: destination
+        };
+        return destination;
+    }
 }
 exports.set = set;
 function cleanCache() {

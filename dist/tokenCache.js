@@ -11,10 +11,13 @@ function getToken(key) {
 exports.getToken = getToken;
 function setToken(key, token) {
     cleanCache();
-    tokens[key] = {
-        validUntil: new Date(new Date().getTime() + (token.expires_in * 1000)),
-        value: token
-    };
+    if (token) {
+        tokens[key] = {
+            validUntil: new Date(new Date().getTime() + (token.expires_in * 1000)),
+            value: token
+        };
+        return token;
+    }
 }
 exports.setToken = setToken;
 function cleanCache() {
