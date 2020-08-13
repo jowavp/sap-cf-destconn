@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.set = exports.get = void 0;
 const destinations = {};
 const cacheLifetime = 60000;
 function get(key) {

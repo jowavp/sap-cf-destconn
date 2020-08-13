@@ -52,6 +52,7 @@ export async function readConnectivity(locationId?: string, principalToken?: str
 }
 
 async function createToken(service: IConnectivityService, principalToken?: string): Promise<string> {
+    
     const cacheKey = `${service.clientid}__${principalToken}`;
     const cachedToken = tokenCache.getToken(cacheKey);
 
@@ -59,6 +60,7 @@ async function createToken(service: IConnectivityService, principalToken?: strin
         return cachedToken.access_token;
     }
     
+
     if (principalToken) {
         
         const refreshToken = (await axios({
@@ -91,9 +93,9 @@ async function createToken(service: IConnectivityService, principalToken?: strin
                 username: service.clientid,
                 password: service.clientsecret
             }
-        })).data.access_token;
+        })).data;
         tokenCache.setToken(cacheKey, token)
-        return token;
+        return token.access_token;
     }
     const token2 = (await axios({
         url: `${service.url}/oauth/token`,
@@ -105,9 +107,9 @@ async function createToken(service: IConnectivityService, principalToken?: strin
             username: service.clientid,
             password: service.clientsecret
         }
-    })).data.access_token;
+    })).data;
     tokenCache.setToken(cacheKey, token2)
-    return token2;
+    return token2.access_token;
 };
 
 function getService(): IConnectivityService {
