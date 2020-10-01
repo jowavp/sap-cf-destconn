@@ -31,7 +31,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.readSubaccountDestination = exports.readDestination = void 0;
+exports.logAxiosError = exports.readSubaccountDestination = exports.readDestination = void 0;
 const axios_1 = __importDefault(require("axios"));
 const xsenv = __importStar(require("@sap/xsenv"));
 const tokenCache = __importStar(require("./tokenCache"));
@@ -75,8 +75,8 @@ function getDestination(access_token, destinationName, ds, jwtToken) {
             return response.data;
         }
         catch (e) {
-            console.error(`Unable to read the destination ${destinationName}`, e);
-            throw e;
+            logAxiosError(e);
+            throw `Unable to read the destination ${destinationName}`;
         }
     });
 }
@@ -95,8 +95,8 @@ function getSubaccountDestination(access_token, destinationName, ds, jwtToken) {
             return response.data;
         }
         catch (e) {
-            console.error(`Unable to read the subaccount destination ${destinationName}`, e);
-            throw e;
+            logAxiosError(e);
+            throw `Unable to read the subaccount destination ${destinationName}`;
         }
     });
 }
@@ -123,8 +123,8 @@ function createToken(ds, subscribedSubdomain = "") {
             return cacheToken.access_token;
         }
         catch (e) {
-            console.error('unable to fetch oauth token for destination service', e);
-            throw e;
+            logAxiosError(e);
+            throw 'unable to fetch oauth token for destination service';
         }
     });
 }
@@ -140,3 +140,36 @@ function getService() {
     }
     return destination;
 }
+function logAxiosError(error) {
+    console.log(`---------- begin sap-cf-destconn ---------`);
+    if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error(error.response.data);
+        console.error(error.response.status);
+        console.error(error.response.headers);
+    }
+    else if (error.request) {
+        // The request was made but no response was received
+        // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+        // http.ClientRequest in node.js
+        console.error(JSON.parse(error.request));
+    }
+    else if (error.message) {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error', error.message);
+    }
+    else {
+        try {
+            console.error(JSON.parse(error));
+        }
+        catch (err) {
+            console.error(error);
+        }
+    }
+    if (error.config) {
+        console.error(error.config);
+    }
+    console.log(`---------- end sap-cf-destconn ---------`);
+}
+exports.logAxiosError = logAxiosError;

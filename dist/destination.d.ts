@@ -50,3 +50,4 @@ export interface IDestinationService {
     clientsecret: string;
     uaadomain: string;
 }
+export declare function logAxiosError(error: any): void;
