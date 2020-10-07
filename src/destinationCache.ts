@@ -1,6 +1,8 @@
+import { IDestinationConfiguration, IDestinationData } from "./destination";
+
 const destinations: {[clientid: string]: {
     validUntil: Date,
-    value: any
+    value: Promise<IDestinationData<any>>
 }} = {};
 const cacheLifetime = 60000;
 
@@ -13,7 +15,7 @@ export function get(key: string){
     }
 }
 
-export function set(key: string, destination: any){
+export function set<T extends IDestinationConfiguration>(key: string, destination: Promise<IDestinationData<T>>){
     cleanCache();
     if(destination) {
         destinations[key] = {

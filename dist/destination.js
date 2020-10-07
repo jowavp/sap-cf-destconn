@@ -59,18 +59,12 @@ function getDestination(access_token, destinationName, ds, jwtToken) {
         const cacheKey = `${destinationName}__${access_token}__${jwtToken}`;
         const cacheDest = destinationCache.get(cacheKey);
         if (cacheDest) {
-            return (yield cacheDest).data;
+            return cacheDest;
         }
         try {
-            return yield (destinationCache.set(cacheKey, axios_1.default({
-                url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${access_token}`,
-                    'X-user-token': jwtToken
-                },
-                responseType: 'json',
-            }))).data;
+            const destinationPromise = fetchDestination(access_token, destinationName, ds, jwtToken);
+            destinationCache.set(cacheKey, destinationPromise);
+            return destinationPromise;
             /*
             destinationCache.set(cacheKey, response)
             return (await response).data;
@@ -131,6 +125,21 @@ function getService() {
         throw ('No destination service available');
     }
     return destination;
+}
+function fetchDestination(access_token, destinationName, ds, jwtToken) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const destination = (yield axios_1.default({
+            url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'X-user-token': jwtToken
+            },
+            responseType: 'json',
+        })).data;
+        console.log(destination);
+        return destination;
+    });
 }
 function fetchToken(subscribedSubdomain, ds) {
     return __awaiter(this, void 0, void 0, function* () {

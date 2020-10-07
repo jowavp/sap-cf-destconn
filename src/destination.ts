@@ -7,7 +7,6 @@ import * as destinationCache from './destinationCache';
 export async function readDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string, subscribedSubdomain?: string) {
 
     const access_token = await createToken(getService(), subscribedSubdomain);
-
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
     const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : null;
     return getDestination<T>(access_token, destinationName, getService(), jwtToken);
@@ -91,19 +90,15 @@ async function getDestination<T extends IDestinationConfiguration>(access_token:
     const cacheDest = destinationCache.get(cacheKey);
 
     if(cacheDest) {
-        return (await cacheDest).data;
+        return cacheDest;
     }
 
     try{
-        return await( destinationCache.set( cacheKey, axios({
-            url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${access_token}`,
-                'X-user-token': jwtToken
-            },
-            responseType: 'json',
-        }) ) ).data;
+
+        const destinationPromise = fetchDestination<T>(access_token, destinationName, ds, jwtToken);
+        destinationCache.set(cacheKey, destinationPromise );
+        return destinationPromise;
+        
         /*
         destinationCache.set(cacheKey, response)
         return (await response).data;
@@ -160,6 +155,21 @@ function getService(): IDestinationService {
         throw ('No destination service available');
     }
 
+    return destination;
+}
+
+async function fetchDestination<T extends IDestinationConfiguration> (access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null) {
+    const destination: IDestinationData<T> = (await axios({
+        url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'X-user-token': jwtToken
+        },
+        responseType: 'json',
+    }) ).data;
+
+    console.log(destination);
     return destination;
 }
 
