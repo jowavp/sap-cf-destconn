@@ -14,7 +14,7 @@ function setToken(key, token) {
     cleanCache();
     if (token) {
         tokens[key] = {
-            validUntil: new Date(new Date().getTime() + (token.expires_in * 1000)),
+            requested: new Date(),
             value: token
         };
         return token;
@@ -22,9 +22,10 @@ function setToken(key, token) {
 }
 exports.setToken = setToken;
 function cleanCache() {
-    const now = new Date().getTime() - 1000;
+    // 1 hour ago
+    const tokenlifetimeago = new Date().getTime() - (60 * 60 * 1000);
     Object.entries(tokens).forEach(function ([key, value]) {
-        if (value.validUntil.getTime() < now) {
+        if (value.requested.getTime() < tokenlifetimeago) {
             delete tokens[key];
         }
     });

@@ -14,7 +14,7 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
     __setModuleDefault(result, mod);
     return result;
 };
@@ -59,10 +59,10 @@ function getDestination(access_token, destinationName, ds, jwtToken) {
         const cacheKey = `${destinationName}__${access_token}__${jwtToken}`;
         const cacheDest = destinationCache.get(cacheKey);
         if (cacheDest) {
-            return cacheDest;
+            return (yield cacheDest).data;
         }
         try {
-            const response = yield axios_1.default({
+            return yield (destinationCache.set(cacheKey, axios_1.default({
                 url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
                 method: 'GET',
                 headers: {
@@ -70,9 +70,11 @@ function getDestination(access_token, destinationName, ds, jwtToken) {
                     'X-user-token': jwtToken
                 },
                 responseType: 'json',
-            });
-            destinationCache.set(cacheKey, response.data);
-            return response.data;
+            }))).data;
+            /*
+            destinationCache.set(cacheKey, response)
+            return (await response).data;
+            */
         }
         catch (e) {
             logAxiosError(e);
@@ -103,24 +105,14 @@ function getSubaccountDestination(access_token, destinationName, ds, jwtToken) {
 function createToken(ds, subscribedSubdomain = "") {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const cacheToken = tokenCache.getToken(`${ds.clientid}__${subscribedSubdomain}`);
+            const cacheKey = `${ds.clientid}__${subscribedSubdomain}`;
+            const cacheToken = tokenCache.getToken(cacheKey);
             if (!cacheToken) {
-                const tokenBaseUrl = subscribedSubdomain ? `https://${subscribedSubdomain}.${ds.uaadomain}` : ds.url;
-                const response = yield axios_1.default({
-                    url: `${tokenBaseUrl}/oauth/token`,
-                    method: 'POST',
-                    responseType: 'json',
-                    data: `client_id=${encodeURIComponent(ds.clientid)}&grant_type=client_credentials`,
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    auth: {
-                        username: ds.clientid,
-                        password: ds.clientsecret
-                    }
-                });
-                tokenCache.setToken(ds.clientid, response.data);
-                return response.data.access_token;
+                const tokenPromise = fetchToken(subscribedSubdomain, ds);
+                tokenCache.setToken(cacheKey, tokenPromise);
+                return (yield tokenPromise).access_token;
             }
-            return cacheToken.access_token;
+            return (yield cacheToken).access_token;
         }
         catch (e) {
             logAxiosError(e);
@@ -139,6 +131,23 @@ function getService() {
         throw ('No destination service available');
     }
     return destination;
+}
+function fetchToken(subscribedSubdomain, ds) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const tokenBaseUrl = subscribedSubdomain ? `https://${subscribedSubdomain}.${ds.uaadomain}` : ds.url;
+        const token = (yield axios_1.default({
+            url: `${tokenBaseUrl}/oauth/token`,
+            method: 'POST',
+            responseType: 'json',
+            data: `client_id=${encodeURIComponent(ds.clientid)}&grant_type=client_credentials`,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            auth: {
+                username: ds.clientid,
+                password: ds.clientsecret
+            }
+        })).data;
+        return token;
+    });
 }
 function logAxiosError(error) {
     console.log(`---------- begin sap-cf-destconn ---------`);

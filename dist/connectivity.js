@@ -14,7 +14,7 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
     __setModuleDefault(result, mod);
     return result;
 };
@@ -63,55 +63,10 @@ function createToken(service, principalToken) {
         const cacheKey = `${service.clientid}__${principalToken}`;
         const cachedToken = tokenCache.getToken(cacheKey);
         if (cachedToken) {
-            return cachedToken.access_token;
+            return (yield cachedToken).access_token;
         }
-        if (principalToken) {
-            const refreshToken = (yield axios_1.default({
-                url: `${service.url}/oauth/token`,
-                method: 'POST',
-                responseType: 'json',
-                params: {
-                    grant_type: 'user_token',
-                    response_type: 'token',
-                    client_id: service.clientid
-                },
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': principalToken
-                },
-            })).data.refresh_token;
-            const token = (yield axios_1.default({
-                url: `${service.url}/oauth/token`,
-                method: 'POST',
-                responseType: 'json',
-                params: {
-                    grant_type: 'refresh_token',
-                    refresh_token: refreshToken
-                },
-                headers: {
-                    'Accept': 'application/json'
-                },
-                auth: {
-                    username: service.clientid,
-                    password: service.clientsecret
-                }
-            })).data;
-            tokenCache.setToken(cacheKey, token);
-            return token.access_token;
-        }
-        const token2 = (yield axios_1.default({
-            url: `${service.url}/oauth/token`,
-            method: 'POST',
-            responseType: 'json',
-            data: `client_id=${encodeURIComponent(service.clientid)}&grant_type=client_credentials`,
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            auth: {
-                username: service.clientid,
-                password: service.clientsecret
-            }
-        })).data;
-        tokenCache.setToken(cacheKey, token2);
-        return token2.access_token;
+        const tokenPromise = tokenCache.setToken(cacheKey, principalToken ? getPrincipalToken(service, principalToken) : getConnectivityToken(service));
+        return tokenPromise ? (yield tokenPromise).access_token : "";
     });
 }
 ;
@@ -125,4 +80,55 @@ function getService() {
         throw ('No connectivity service available');
     }
     return connectivity;
+}
+function getConnectivityToken(service) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const token = (yield axios_1.default({
+            url: `${service.url}/oauth/token`,
+            method: 'POST',
+            responseType: 'json',
+            data: `client_id=${encodeURIComponent(service.clientid)}&grant_type=client_credentials`,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            auth: {
+                username: service.clientid,
+                password: service.clientsecret
+            }
+        })).data;
+        return token;
+    });
+}
+function getPrincipalToken(service, principalToken) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const refreshToken = (yield axios_1.default({
+            url: `${service.url}/oauth/token`,
+            method: 'POST',
+            responseType: 'json',
+            params: {
+                grant_type: 'user_token',
+                response_type: 'token',
+                client_id: service.clientid
+            },
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': principalToken
+            },
+        })).data.refresh_token;
+        const token = (yield axios_1.default({
+            url: `${service.url}/oauth/token`,
+            method: 'POST',
+            responseType: 'json',
+            params: {
+                grant_type: 'refresh_token',
+                refresh_token: refreshToken
+            },
+            headers: {
+                'Accept': 'application/json'
+            },
+            auth: {
+                username: service.clientid,
+                password: service.clientsecret
+            }
+        })).data;
+        return token;
+    });
 }

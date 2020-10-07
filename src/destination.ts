@@ -91,11 +91,11 @@ async function getDestination<T extends IDestinationConfiguration>(access_token:
     const cacheDest = destinationCache.get(cacheKey);
 
     if(cacheDest) {
-        return cacheDest;
+        return (await cacheDest).data;
     }
 
     try{
-        const response = await axios({
+        return await( destinationCache.set( cacheKey, axios({
             url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
             method: 'GET',
             headers: {
@@ -103,9 +103,11 @@ async function getDestination<T extends IDestinationConfiguration>(access_token:
                 'X-user-token': jwtToken
             },
             responseType: 'json',
-        });
-        destinationCache.set(cacheKey, response.data)
-        return response.data;
+        }) ) ).data;
+        /*
+        destinationCache.set(cacheKey, response)
+        return (await response).data;
+        */
     } catch(e) {
         logAxiosError(e);
         throw `Unable to read the destination ${destinationName}`;
@@ -132,28 +134,15 @@ async function getSubaccountDestination<T extends IDestinationConfiguration>(acc
 
 async function createToken(ds: IDestinationService, subscribedSubdomain: string = ""): Promise<string> {
     try{
-        const cacheToken = tokenCache.getToken(`${ds.clientid}__${subscribedSubdomain}`);
+        const cacheKey = `${ds.clientid}__${subscribedSubdomain}`;
+        const cacheToken = tokenCache.getToken(cacheKey);
 
         if(!cacheToken) {
-
-            const tokenBaseUrl = subscribedSubdomain ? `https://${subscribedSubdomain}.${ds.uaadomain}` : ds.url;
-
-            const response =  await axios({
-                url: `${tokenBaseUrl}/oauth/token`,
-                method: 'POST',
-                responseType: 'json',
-                data: `client_id=${encodeURIComponent(ds.clientid)}&grant_type=client_credentials`,
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                auth: {
-                    username: ds.clientid,
-                    password: ds.clientsecret
-                }
-            });
-            tokenCache.setToken(ds.clientid, response.data);
-            
-            return response.data.access_token;
+            const tokenPromise = fetchToken(subscribedSubdomain, ds);
+            tokenCache.setToken(cacheKey, tokenPromise);
+            return (await tokenPromise).access_token
         }
-        return cacheToken.access_token;
+        return (await cacheToken).access_token;
     } catch (e) {
         logAxiosError(e);
         throw 'unable to fetch oauth token for destination service';
@@ -172,6 +161,23 @@ function getService(): IDestinationService {
     }
 
     return destination;
+}
+
+async function fetchToken (subscribedSubdomain: string, ds: IDestinationService) {
+    const tokenBaseUrl = subscribedSubdomain ? `https://${subscribedSubdomain}.${ds.uaadomain}` : ds.url;
+    const token: tokenCache.IOauthToken = (await axios({
+        url: `${tokenBaseUrl}/oauth/token`,
+        method: 'POST',
+        responseType: 'json',
+        data: `client_id=${encodeURIComponent(ds.clientid)}&grant_type=client_credentials`,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        auth: {
+            username: ds.clientid,
+            password: ds.clientsecret
+        }
+    })).data;
+
+    return token;
 }
 
 export function logAxiosError (error: any) {

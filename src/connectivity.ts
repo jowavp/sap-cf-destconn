@@ -1,4 +1,4 @@
-import axios, { AxiosProxyConfig } from 'axios';
+import axios, { AxiosPromise, AxiosProxyConfig } from 'axios';
 import * as xsenv from '@sap/xsenv';
 import * as tokenCache from './tokenCache';
 
@@ -57,59 +57,11 @@ async function createToken(service: IConnectivityService, principalToken?: strin
     const cachedToken = tokenCache.getToken(cacheKey);
 
     if(cachedToken) {
-        return cachedToken.access_token;
+        return (await cachedToken).access_token;
     }
     
-
-    if (principalToken) {
-        
-        const refreshToken = (await axios({
-            url: `${service.url}/oauth/token`,
-            method: 'POST',
-            responseType: 'json',
-            params: {
-                grant_type: 'user_token',
-                response_type: 'token',
-                client_id: service.clientid
-            },
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': principalToken
-            },
-
-        })).data.refresh_token;
-        const token = (await axios({
-            url: `${service.url}/oauth/token`,
-            method: 'POST',
-            responseType: 'json',
-            params: {
-                grant_type: 'refresh_token',
-                refresh_token: refreshToken
-            },
-            headers: {
-                'Accept': 'application/json'
-            },
-            auth: {
-                username: service.clientid,
-                password: service.clientsecret
-            }
-        })).data;
-        tokenCache.setToken(cacheKey, token)
-        return token.access_token;
-    }
-    const token2 = (await axios({
-        url: `${service.url}/oauth/token`,
-        method: 'POST',
-        responseType: 'json',
-        data: `client_id=${encodeURIComponent(service.clientid)}&grant_type=client_credentials`,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        auth: {
-            username: service.clientid,
-            password: service.clientsecret
-        }
-    })).data;
-    tokenCache.setToken(cacheKey, token2)
-    return token2.access_token;
+    const tokenPromise = tokenCache.setToken(cacheKey, principalToken ? getPrincipalToken(service, principalToken): getConnectivityToken(service));
+    return tokenPromise ? (await tokenPromise).access_token : "";
 };
 
 function getService(): IConnectivityService {
@@ -124,5 +76,56 @@ function getService(): IConnectivityService {
     }
 
     return connectivity;
+}
+
+async function getConnectivityToken (service: IConnectivityService) {
+    const token: tokenCache.IOauthToken = (await axios({
+        url: `${service.url}/oauth/token`,
+        method: 'POST',
+        responseType: 'json',
+        data: `client_id=${encodeURIComponent(service.clientid)}&grant_type=client_credentials`,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        auth: {
+            username: service.clientid,
+            password: service.clientsecret
+        }
+    })).data;
+    return token;
+}
+
+async function getPrincipalToken (service: IConnectivityService, principalToken: string) {
+    
+    const refreshToken = (await axios({
+        url: `${service.url}/oauth/token`,
+        method: 'POST',
+        responseType: 'json',
+        params: {
+            grant_type: 'user_token',
+            response_type: 'token',
+            client_id: service.clientid
+        },
+        headers: {
+            'Accept': 'application/json',
+            'Authorization': principalToken
+        },
+
+    })).data.refresh_token;
+    const token: tokenCache.IOauthToken = (await axios({
+        url: `${service.url}/oauth/token`,
+        method: 'POST',
+        responseType: 'json',
+        params: {
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken
+        },
+        headers: {
+            'Accept': 'application/json'
+        },
+        auth: {
+            username: service.clientid,
+            password: service.clientsecret
+        }
+    })).data;
+    return token;
 }
 
