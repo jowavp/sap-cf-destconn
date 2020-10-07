@@ -169,7 +169,7 @@ async function fetchDestination<T extends IDestinationConfiguration> (access_tok
         responseType: 'json',
     }) ).data;
 
-    console.log(destination);
+    // console.log(destination);
     return destination;
 }
 

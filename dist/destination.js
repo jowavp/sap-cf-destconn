@@ -137,7 +137,7 @@ function fetchDestination(access_token, destinationName, ds, jwtToken) {
             },
             responseType: 'json',
         })).data;
-        console.log(destination);
+        // console.log(destination);
         return destination;
     });
 }
