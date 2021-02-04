@@ -14,12 +14,12 @@ $ npm install -s sap-cf-destconn
 
 ```js
     const {readDestination} = require('sap-cf-destconn');
-    const destinationConfig = await readDestination("destinationName", "<JWT Token if you use Oauth2SAML or Oauth2USerToken>")
+    const destinationConfig = await readDestination("destinationName", "<JWT Token if you use Oauth2SAML or Oauth2USerToken>");
 ```
 
 ### Read the connectivity configuration 
 
 ```js
     const {readConnectivity} = require('sap-cf-destconn');
-    const connectivityConfig = await readConnectivity("<locationID>", "<JWT Token if you use principal propagation>")
+    const connectivityConfig = await readConnectivity("<locationID>", "<JWT Token if you use principal propagation>");
 ```

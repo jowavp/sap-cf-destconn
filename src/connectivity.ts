@@ -9,7 +9,13 @@ export interface IConnectivityConfig {
     headers: {
         'Proxy-Authorization': string;
         'SAP-Connectivity-SCC-Location_ID'?: string;
-    }
+    },
+
+    onpremise_proxy_host?: string;
+    onpremise_proxy_port?: number;
+    access_token?: string,
+    onpremise_proxy_ldap_port?: number,
+	onpremise_socks5_proxy_port?: number
 }
 
 interface IConnectivityService {
@@ -40,7 +46,13 @@ export async function readConnectivity(locationId?: string, principalToken?: str
         proxy,
         headers: {
             'Proxy-Authorization': `Bearer ${access_token}`
-        }
+        },
+        access_token,
+        onpremise_proxy_host: connectivityService.onpremise_proxy_host,
+        onpremise_proxy_port: parseInt(connectivityService.onpremise_proxy_port, 10),
+        onpremise_proxy_ldap_port: parseInt(connectivityService.onpremise_proxy_ldap_port, 10),
+	    onpremise_socks5_proxy_port: parseInt(connectivityService.onpremise_socks5_proxy_port, 10),
+
     }
 
     if (locationId) {

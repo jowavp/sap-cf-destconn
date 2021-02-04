@@ -5,5 +5,10 @@ export interface IConnectivityConfig {
         'Proxy-Authorization': string;
         'SAP-Connectivity-SCC-Location_ID'?: string;
     };
+    onpremise_proxy_host?: string;
+    onpremise_proxy_port?: number;
+    access_token?: string;
+    onpremise_proxy_ldap_port?: number;
+    onpremise_socks5_proxy_port?: number;
 }
 export declare function readConnectivity(locationId?: string, principalToken?: string): Promise<IConnectivityConfig>;
