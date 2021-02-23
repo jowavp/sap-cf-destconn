@@ -194,13 +194,14 @@ function getService() {
 }
 function fetchDestination(access_token, destinationName, ds, jwtToken) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (process.env.VCAP_SERVICES) {
-            var services = JSON.parse(process.env.VCAP_SERVICES);
-            if (services.destinations && Array.isArray(services.destinations)) {
-                const destination = services.destinations.find((d) => d.name === destinationName);
-                if (destination)
+        if (process.env.destinations) {
+            var destinations = JSON.parse(process.env.destinations);
+            if (destinations && Array.isArray(destinations)) {
+                const destination = destinations.find((d) => d.name === destinationName);
+                if (destination) {
                     //@ts-ignore
-                    return new Promise((resolve) => resolve(new MockDestination(destination).getDestination()));
+                    return new Promise((resolve) => resolve(new MockDestination(destination, access_token).getDestination()));
+                }
             }
         }
         const destination = (yield axios_1.default({

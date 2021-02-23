@@ -257,10 +257,10 @@ function getService(): IDestinationService {
 
 async function fetchDestination<T extends IDestinationConfiguration> (access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null) {
     
-    if (process.env.VCAP_SERVICES) {
-        var services: {destinations: IMockDestinationConfiguration[]} = JSON.parse(process.env.VCAP_SERVICES);
-        if (services.destinations && Array.isArray(services.destinations)) {
-            const destination = services.destinations.find( (d) => d.name === destinationName);
+    if (process.env.destinations) {
+        var destinations: {destinations: IMockDestinationConfiguration[]} = JSON.parse(process.env.destinations);
+        if (destinations && Array.isArray(destinations)) {
+            const destination = destinations.find( (d) => d.name === destinationName);
             if(destination) {
                 //@ts-ignore
                 return new Promise<IDestinationData<T>>( (resolve) => resolve(new MockDestination(destination, access_token).getDestination()) );
