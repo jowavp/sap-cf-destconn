@@ -24,6 +24,7 @@ export async function readSubaccountDestination<T extends IDestinationConfigurat
 }
 
 export interface IDestinationData<T extends IDestinationConfiguration> {
+    name?: string,
     owner: {
         SubaccountId: string;
         InstanceId: string;
@@ -33,14 +34,110 @@ export interface IDestinationData<T extends IDestinationConfiguration> {
     {
         type: string;
         value: string;
-        expires_in: string;
-        error: string;
+        expires_in?: string;
+        error?: string;
     }[]
 }
 
 export interface IDestinationConfiguration {
     Name: string;
     Type: string;
+}
+
+export interface IMockDestinationConfiguration {
+    name: string;
+    url: string;
+
+    strictssl?: boolean;
+    forwardauthtoken?: boolean;
+    username?: string;
+    password?: string;
+
+    [key: string]: any;
+}
+
+class MockDestination implements IMockDestinationConfiguration {
+    constructor (o: IMockDestinationConfiguration, token?: string) {
+        this.name = o.name;
+        this.url = o.url;
+        if (token) {
+            this.token = token;
+        }
+        
+        Object.entries(o).forEach(([key, value]) => {
+            //@ts-ignore
+            this[key.toLowerCase()] = value;
+        })
+    }
+
+    public getAuthenthicationType () {
+        if( this.username && this.password) {
+            return "BasicAuthentication";
+        }
+        if (this.forwardauthtoken) {
+            return "OAuth2UserTokenExchange"
+        }
+        return "NoAuthentication";
+        // | "BasicAuthentication" | "OAuth2UserTokenExchange" | "OAuth2SAMLBearerAssertion" | "PrincipalPropagation" | "OAuth2ClientCredentials"
+                    
+    }
+
+    private getAuthTokens () {
+        if (this.getAuthenthicationType() === "BasicAuthentication") {
+            return [{
+                type: "Basic",
+                value: Buffer.from(this.username + ":" + this.password).toString("base64")
+            }]
+        }
+        if (this.getAuthenthicationType() === "OAuth2UserTokenExchange" && this.token) {
+            return [{
+                type: "Bearer",
+                value: this.token.replace('Bearer', '').replace('bearer', '')
+            }]
+        }
+        return [];
+    }
+
+    public getDestination (): IDestinationData<IHTTPDestinationConfiguration> {
+        return {
+            owner: {
+                SubaccountId: "local",
+                InstanceId: "Local"
+            },
+            destinationConfiguration: {
+                URL: this.url,
+                Authentication: this.getAuthenthicationType(),
+                ProxyType: "Internet",
+                // CloudConnectorLocationId: string;
+                Description: this.description + "",
+            
+                User: this.username || "",
+                Password: this.password || "",
+            
+                tokenServiceURLType: "",
+                clientId: "",
+                saml2_audience: "",
+                tokenServiceURL: "",
+                clientSecret: "",
+                CloudConnectorLocationId: "",
+                Name: this.name,
+                Type: "HTTP",
+                
+                WebIDEUsage: "odata",
+                WebIDEEnabled: "false"
+            },
+            authTokens: this.getAuthTokens()
+        }
+    }
+
+    name: string;
+    url: string;
+    strictssl?: boolean;
+    forwardauthtoken?: boolean;
+    username?: string;
+    password?: string;
+    [key: string]: any;
+
 }
 
 export interface IHTTPDestinationConfiguration extends IDestinationConfiguration  {
@@ -159,6 +256,18 @@ function getService(): IDestinationService {
 }
 
 async function fetchDestination<T extends IDestinationConfiguration> (access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null) {
+    
+    if (process.env.VCAP_SERVICES) {
+        var services: {destinations: IMockDestinationConfiguration[]} = JSON.parse(process.env.VCAP_SERVICES);
+        if (services.destinations && Array.isArray(services.destinations)) {
+            const destination = services.destinations.find( (d) => d.name === destinationName);
+            if(destination) {
+                //@ts-ignore
+                return new Promise<IDestinationData<T>>( (resolve) => resolve(new MockDestination(destination, access_token).getDestination()) );
+            }
+        }
+    }
+    
     const destination: IDestinationData<T> = (await axios({
         url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
         method: 'GET',

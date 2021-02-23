@@ -1,6 +1,7 @@
 export declare function readDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string, subscribedSubdomain?: string): Promise<IDestinationData<T>>;
 export declare function readSubaccountDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string, subscribedSubdomain?: string): Promise<T>;
 export interface IDestinationData<T extends IDestinationConfiguration> {
+    name?: string;
     owner: {
         SubaccountId: string;
         InstanceId: string;
@@ -9,13 +10,22 @@ export interface IDestinationData<T extends IDestinationConfiguration> {
     authTokens: {
         type: string;
         value: string;
-        expires_in: string;
-        error: string;
+        expires_in?: string;
+        error?: string;
     }[];
 }
 export interface IDestinationConfiguration {
     Name: string;
     Type: string;
+}
+export interface IMockDestinationConfiguration {
+    name: string;
+    url: string;
+    strictssl?: boolean;
+    forwardauthtoken?: boolean;
+    username?: string;
+    password?: string;
+    [key: string]: any;
 }
 export interface IHTTPDestinationConfiguration extends IDestinationConfiguration {
     URL: string;

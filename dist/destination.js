@@ -54,6 +54,72 @@ function readSubaccountDestination(destinationName, authorizationHeader, subscri
     });
 }
 exports.readSubaccountDestination = readSubaccountDestination;
+class MockDestination {
+    constructor(o, token) {
+        this.name = o.name;
+        this.url = o.url;
+        if (token) {
+            this.token = token;
+        }
+        Object.entries(o).forEach(([key, value]) => {
+            //@ts-ignore
+            this[key.toLowerCase()] = value;
+        });
+    }
+    getAuthenthicationType() {
+        if (this.username && this.password) {
+            return "BasicAuthentication";
+        }
+        if (this.forwardauthtoken) {
+            return "OAuth2UserTokenExchange";
+        }
+        return "NoAuthentication";
+        // | "BasicAuthentication" | "OAuth2UserTokenExchange" | "OAuth2SAMLBearerAssertion" | "PrincipalPropagation" | "OAuth2ClientCredentials"
+    }
+    getAuthTokens() {
+        if (this.getAuthenthicationType() === "BasicAuthentication") {
+            return [{
+                    type: "Basic",
+                    value: Buffer.from(this.username + ":" + this.password).toString("base64")
+                }];
+        }
+        if (this.getAuthenthicationType() === "OAuth2UserTokenExchange" && this.token) {
+            return [{
+                    type: "Bearer",
+                    value: this.token.replace('Bearer', '').replace('bearer', '')
+                }];
+        }
+        return [];
+    }
+    getDestination() {
+        return {
+            owner: {
+                SubaccountId: "local",
+                InstanceId: "Local"
+            },
+            destinationConfiguration: {
+                URL: this.url,
+                Authentication: this.getAuthenthicationType(),
+                ProxyType: "Internet",
+                // CloudConnectorLocationId: string;
+                Description: this.description + "",
+                User: this.username || "",
+                Password: this.password || "",
+                tokenServiceURLType: "",
+                clientId: "",
+                saml2_audience: "",
+                tokenServiceURL: "",
+                clientSecret: "",
+                CloudConnectorLocationId: "",
+                Name: this.name,
+                Type: "HTTP",
+                WebIDEUsage: "odata",
+                WebIDEEnabled: "false"
+            },
+            authTokens: this.getAuthTokens()
+        };
+    }
+}
 function getDestination(access_token, destinationName, ds, jwtToken) {
     return __awaiter(this, void 0, void 0, function* () {
         const cacheKey = `${destinationName}__${access_token}__${jwtToken}`;
@@ -128,6 +194,15 @@ function getService() {
 }
 function fetchDestination(access_token, destinationName, ds, jwtToken) {
     return __awaiter(this, void 0, void 0, function* () {
+        if (process.env.VCAP_SERVICES) {
+            var services = JSON.parse(process.env.VCAP_SERVICES);
+            if (services.destinations && Array.isArray(services.destinations)) {
+                const destination = services.destinations.find((d) => d.name === destinationName);
+                if (destination)
+                    //@ts-ignore
+                    return new Promise((resolve) => resolve(new MockDestination(destination).getDestination()));
+            }
+        }
         const destination = (yield axios_1.default({
             url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
             method: 'GET',
