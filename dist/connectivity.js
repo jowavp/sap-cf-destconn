@@ -53,8 +53,10 @@ function readConnectivity(locationId, principalToken) {
             access_token,
             onpremise_proxy_host: connectivityService.onpremise_proxy_host,
             onpremise_proxy_port: parseInt(connectivityService.onpremise_proxy_port, 10),
+            onpremise_proxy_http_port: parseInt(connectivityService.onpremise_proxy_http_port, 10),
             onpremise_proxy_ldap_port: parseInt(connectivityService.onpremise_proxy_ldap_port, 10),
             onpremise_socks5_proxy_port: parseInt(connectivityService.onpremise_socks5_proxy_port, 10),
+            onpremise_proxy_rfc_port: parseInt(connectivityService.onpremise_proxy_rfc_port, 10)
         };
         if (locationId) {
             result.headers["SAP-Connectivity-SCC-Location_ID"] = locationId;

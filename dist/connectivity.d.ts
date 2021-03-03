@@ -7,8 +7,10 @@ export interface IConnectivityConfig {
     };
     onpremise_proxy_host?: string;
     onpremise_proxy_port?: number;
+    onpremise_proxy_http_port?: number;
     access_token?: string;
     onpremise_proxy_ldap_port?: number;
     onpremise_socks5_proxy_port?: number;
+    onpremise_proxy_rfc_port?: number;
 }
 export declare function readConnectivity(locationId?: string, principalToken?: string): Promise<IConnectivityConfig>;

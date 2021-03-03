@@ -13,9 +13,11 @@ export interface IConnectivityConfig {
 
     onpremise_proxy_host?: string;
     onpremise_proxy_port?: number;
+    onpremise_proxy_http_port?: number,
     access_token?: string,
     onpremise_proxy_ldap_port?: number,
-	onpremise_socks5_proxy_port?: number
+	onpremise_socks5_proxy_port?: number,
+    onpremise_proxy_rfc_port?: number
 }
 
 interface IConnectivityService {
@@ -31,6 +33,7 @@ interface IConnectivityService {
     onpremise_proxy_ldap_port: string;
     onpremise_proxy_rfc_port: string;
     onpremise_socks5_proxy_port: string;
+    onpremise_proxy_http_port: string;
 }
 
 export async function readConnectivity(locationId?: string, principalToken?: string) {
@@ -50,8 +53,10 @@ export async function readConnectivity(locationId?: string, principalToken?: str
         access_token,
         onpremise_proxy_host: connectivityService.onpremise_proxy_host,
         onpremise_proxy_port: parseInt(connectivityService.onpremise_proxy_port, 10),
+        onpremise_proxy_http_port: parseInt(connectivityService.onpremise_proxy_http_port, 10),
         onpremise_proxy_ldap_port: parseInt(connectivityService.onpremise_proxy_ldap_port, 10),
 	    onpremise_socks5_proxy_port: parseInt(connectivityService.onpremise_socks5_proxy_port, 10),
+        onpremise_proxy_rfc_port: parseInt(connectivityService.onpremise_proxy_rfc_port, 10)
 
     }
 
