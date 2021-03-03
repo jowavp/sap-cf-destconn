@@ -1,6 +1,6 @@
 {
   "name": "sap-cf-destconn",
-  "version": "0.0.28",
+  "version": "0.0.29",
   "description": "NodeJS Library that wraps the calls for the destination and connectivity service",
   "main": "dist/index.js",
   "files": [
@@ -20,11 +20,11 @@
   },
   "homepage": "https://github.com/jowavp/sap-cf-destconn#readme",
   "dependencies": {
-    "@sap/xsenv": "^2.1.0",
+    "@sap/xsenv": "^2.2.0",
     "axios": "^0.21.1"
   },
   "devDependencies": {
     "@types/axios": "^0.14.0",
-    "@types/sap__xsenv": "^2.0.0"
+    "@types/sap__xsenv": "^2.0.2"
   }
 }
