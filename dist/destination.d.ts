@@ -17,6 +17,8 @@ export interface IDestinationData<T extends IDestinationConfiguration> {
 export interface IDestinationConfiguration {
     Name: string;
     Type: string;
+    ProxyType: string;
+    CloudConnectorLocationId: string;
 }
 export interface IMockDestinationConfiguration {
     name: string;
@@ -30,8 +32,6 @@ export interface IMockDestinationConfiguration {
 export interface IHTTPDestinationConfiguration extends IDestinationConfiguration {
     URL: string;
     Authentication: "NoAuthentication" | "BasicAuthentication" | "OAuth2UserTokenExchange" | "OAuth2SAMLBearerAssertion" | "PrincipalPropagation" | "OAuth2ClientCredentials";
-    ProxyType: string;
-    CloudConnectorLocationId: string;
     Description: string;
     User: string;
     Password: string;
@@ -52,6 +52,9 @@ export interface IMailDestinationConfiguration extends IDestinationConfiguration
     "mail.smtp"?: string;
     "mail.port"?: string;
     "mail.from"?: string;
+    "mail.smtp.host": string;
+    "mail.smtp.port": string;
+    "mail.smtp.from"?: string;
 }
 export interface IDestinationService {
     url: string;
