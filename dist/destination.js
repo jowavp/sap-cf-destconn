@@ -169,10 +169,13 @@ function createToken(ds, subscribedSubdomain = "") {
             const cacheToken = tokenCache.getToken(cacheKey);
             if (!cacheToken) {
                 const tokenPromise = fetchToken(subscribedSubdomain, ds);
-                tokenCache.setToken(cacheKey, tokenPromise);
-                return (yield tokenPromise).access_token;
+                const token = yield tokenCache.setToken(cacheKey, tokenPromise);
+                if (!token) {
+                    throw 'unable to fetch oauth token for destination service';
+                }
+                return token.access_token;
             }
-            return (yield cacheToken).access_token;
+            return cacheToken.access_token;
         }
         catch (e) {
             logAxiosError(e);

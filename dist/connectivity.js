@@ -70,10 +70,10 @@ function createToken(service, principalToken) {
         const cacheKey = `${service.clientid}__${principalToken}`;
         const cachedToken = tokenCache.getToken(cacheKey);
         if (cachedToken) {
-            return (yield cachedToken).access_token;
+            return cachedToken.access_token;
         }
-        const tokenPromise = tokenCache.setToken(cacheKey, principalToken ? getPrincipalToken(service, principalToken) : getConnectivityToken(service));
-        return tokenPromise ? (yield tokenPromise).access_token : "";
+        const tokenPromise = yield tokenCache.setToken(cacheKey, principalToken ? getPrincipalToken(service, principalToken) : getConnectivityToken(service));
+        return tokenPromise ? tokenPromise.access_token : "";
     });
 }
 ;

@@ -5,5 +5,5 @@ export declare type IOauthToken = {
     "scope": string;
     "jti": string;
 };
-export declare function getToken(key: string): Promise<IOauthToken> | undefined;
-export declare function setToken(key: string, token: Promise<IOauthToken>): Promise<IOauthToken> | undefined;
+export declare function getToken(key: string): IOauthToken | undefined;
+export declare function setToken(key: string, tokenProm: Promise<IOauthToken>): Promise<IOauthToken | undefined>;
