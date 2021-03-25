@@ -74,11 +74,11 @@ async function createToken(service: IConnectivityService, principalToken?: strin
     const cachedToken = tokenCache.getToken(cacheKey);
 
     if(cachedToken) {
-        return (await cachedToken).access_token;
+        return cachedToken.access_token;
     }
     
-    const tokenPromise = tokenCache.setToken(cacheKey, principalToken ? getPrincipalToken(service, principalToken): getConnectivityToken(service));
-    return tokenPromise ? (await tokenPromise).access_token : "";
+    const tokenPromise = await tokenCache.setToken(cacheKey, principalToken ? getPrincipalToken(service, principalToken): getConnectivityToken(service));
+    return tokenPromise ? tokenPromise.access_token : "";
 };
 
 function getService(): IConnectivityService {

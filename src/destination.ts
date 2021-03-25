@@ -236,10 +236,13 @@ async function createToken(ds: IDestinationService, subscribedSubdomain: string 
 
         if(!cacheToken) {
             const tokenPromise = fetchToken(subscribedSubdomain, ds);
-            tokenCache.setToken(cacheKey, tokenPromise);
-            return (await tokenPromise).access_token
+            const token = await tokenCache.setToken(cacheKey, tokenPromise);
+            if (! token ) {
+                throw 'unable to fetch oauth token for destination service';
+            }
+            return token.access_token
         }
-        return (await cacheToken).access_token;
+        return cacheToken.access_token;
     } catch (e) {
         logAxiosError(e);
         throw 'unable to fetch oauth token for destination service';
