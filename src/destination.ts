@@ -8,7 +8,7 @@ export async function readDestination<T extends IDestinationConfiguration>(desti
 
     const access_token = await createToken(getService(), subscribedSubdomain);
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
-    const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : null;
+    const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
     return getDestination<T>(access_token, destinationName, getService(), jwtToken);
 
 }
@@ -44,7 +44,7 @@ export interface IDestinationConfiguration {
     Type: string;
     ProxyType: string;
     CloudConnectorLocationId: string;
-    
+
 }
 
 export interface IMockDestinationConfiguration {
@@ -60,21 +60,21 @@ export interface IMockDestinationConfiguration {
 }
 
 class MockDestination implements IMockDestinationConfiguration {
-    constructor (o: IMockDestinationConfiguration, token?: string) {
+    constructor(o: IMockDestinationConfiguration, token?: string) {
         this.name = o.name;
         this.url = o.url;
         if (token) {
             this.token = token;
         }
-        
+
         Object.entries(o).forEach(([key, value]) => {
             //@ts-ignore
             this[key.toLowerCase()] = value;
         })
     }
 
-    public getAuthenthicationType () {
-        if( this.username && this.password) {
+    public getAuthenthicationType() {
+        if (this.username && this.password) {
             return "BasicAuthentication";
         }
         if (this.forwardauthtoken) {
@@ -82,10 +82,10 @@ class MockDestination implements IMockDestinationConfiguration {
         }
         return "NoAuthentication";
         // | "BasicAuthentication" | "OAuth2UserTokenExchange" | "OAuth2SAMLBearerAssertion" | "PrincipalPropagation" | "OAuth2ClientCredentials"
-                    
+
     }
 
-    private getAuthTokens () {
+    private getAuthTokens() {
         if (this.getAuthenthicationType() === "BasicAuthentication") {
             return [{
                 type: "Basic",
@@ -101,7 +101,7 @@ class MockDestination implements IMockDestinationConfiguration {
         return [];
     }
 
-    public getDestination (): IDestinationData<IHTTPDestinationConfiguration> {
+    public getDestination(): IDestinationData<IHTTPDestinationConfiguration> {
         return {
             owner: {
                 SubaccountId: "local",
@@ -113,10 +113,10 @@ class MockDestination implements IMockDestinationConfiguration {
                 ProxyType: "Internet",
                 // CloudConnectorLocationId: string;
                 Description: this.description + "",
-            
+
                 User: this.username || "",
                 Password: this.password || "",
-            
+
                 tokenServiceURLType: "",
                 clientId: "",
                 saml2_audience: "",
@@ -125,7 +125,7 @@ class MockDestination implements IMockDestinationConfiguration {
                 CloudConnectorLocationId: "",
                 Name: this.name,
                 Type: "HTTP",
-                
+
                 WebIDEUsage: "odata",
                 WebIDEEnabled: "false"
             },
@@ -143,7 +143,7 @@ class MockDestination implements IMockDestinationConfiguration {
 
 }
 
-export interface IHTTPDestinationConfiguration extends IDestinationConfiguration  {
+export interface IHTTPDestinationConfiguration extends IDestinationConfiguration {
     URL: string;
     Authentication: "NoAuthentication" | "BasicAuthentication" | "OAuth2UserTokenExchange" | "OAuth2SAMLBearerAssertion" | "PrincipalPropagation" | "OAuth2ClientCredentials";
     Description: string;
@@ -187,32 +187,32 @@ export interface IDestinationService {
     uaadomain: string;
 }
 
-async function getDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null): Promise<IDestinationData<T>> {
+async function getDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | undefined): Promise<IDestinationData<T>> {
     const cacheKey = `${destinationName}__${access_token}__${jwtToken}`;
     const cacheDest = destinationCache.get(cacheKey);
 
-    if(cacheDest) {
+    if (cacheDest) {
         return cacheDest;
     }
 
-    try{
+    try {
 
         const destinationPromise = fetchDestination<T>(access_token, destinationName, ds, jwtToken);
-        destinationCache.set(cacheKey, destinationPromise );
+        destinationCache.set(cacheKey, destinationPromise);
         return destinationPromise;
-        
+
         /*
         destinationCache.set(cacheKey, response)
         return (await response).data;
         */
-    } catch(e) {
+    } catch (e) {
         logAxiosError(e);
         throw `Unable to read the destination ${destinationName}`;
     }
 }
 
 async function getSubaccountDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null): Promise<T> {
-    try{
+    try {
         const response = await axios({
             url: `${ds.uri}/destination-configuration/v1/subaccountDestinations/${destinationName}`,
             method: 'GET',
@@ -223,21 +223,21 @@ async function getSubaccountDestination<T extends IDestinationConfiguration>(acc
             responseType: 'json',
         });
         return response.data;
-    } catch(e) {
+    } catch (e) {
         logAxiosError(e);
         throw `Unable to read the subaccount destination ${destinationName}`;
     }
 }
 
 async function createToken(ds: IDestinationService, subscribedSubdomain: string = ""): Promise<string> {
-    try{
+    try {
         const cacheKey = `${ds.clientid}__${subscribedSubdomain}`;
         const cacheToken = tokenCache.getToken(cacheKey);
 
-        if(!cacheToken) {
+        if (!cacheToken) {
             const tokenPromise = fetchToken(subscribedSubdomain, ds);
             const token = await tokenCache.setToken(cacheKey, tokenPromise);
-            if (! token ) {
+            if (!token) {
                 throw 'unable to fetch oauth token for destination service';
             }
             return token.access_token
@@ -263,34 +263,39 @@ function getService(): IDestinationService {
     return destination;
 }
 
-async function fetchDestination<T extends IDestinationConfiguration> (access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null) {
-    
+async function fetchDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | undefined) {
+
     if (process.env.destinations) {
-        var destinations: {destinations: IMockDestinationConfiguration[]} = JSON.parse(process.env.destinations);
+        var destinations: { destinations: IMockDestinationConfiguration[] } = JSON.parse(process.env.destinations);
         if (destinations && Array.isArray(destinations)) {
-            const destination = destinations.find( (d) => d.name === destinationName);
-            if(destination) {
+            const destination = destinations.find((d) => d.name === destinationName);
+            if (destination) {
                 //@ts-ignore
-                return new Promise<IDestinationData<T>>( (resolve) => resolve(new MockDestination(destination, access_token).getDestination()) );
+                return new Promise<IDestinationData<T>>((resolve) => resolve(new MockDestination(destination, access_token).getDestination()));
             }
         }
     }
-    
+
+    const headers: { [key: string]: string } = {
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    if (jwtToken) {
+        headers['X-user-token'] = jwtToken;
+    }
+
     const destination: IDestinationData<T> = (await axios({
         url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
         method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${access_token}`,
-            'X-user-token': jwtToken
-        },
+        headers,
         responseType: 'json',
-    }) ).data;
+    })).data;
 
     // console.log(destination);
     return destination;
 }
 
-async function fetchToken (subscribedSubdomain: string, ds: IDestinationService) {
+async function fetchToken(subscribedSubdomain: string, ds: IDestinationService) {
     const tokenBaseUrl = subscribedSubdomain ? `https://${subscribedSubdomain}.${ds.uaadomain}` : ds.url;
     const token: tokenCache.IOauthToken = (await axios({
         url: `${tokenBaseUrl}/oauth/token`,
@@ -307,7 +312,7 @@ async function fetchToken (subscribedSubdomain: string, ds: IDestinationService)
     return token;
 }
 
-export function logAxiosError (error: any) {
+export function logAxiosError(error: any) {
     console.log(`---------- begin sap-cf-destconn ---------`);
     if (error.response) {
         // The request was made and the server responded with a status code
@@ -315,23 +320,23 @@ export function logAxiosError (error: any) {
         console.error(error.response.data);
         console.error(error.response.status);
         console.error(error.response.headers);
-      } else if (error.request) {
+    } else if (error.request) {
         // The request was made but no response was received
         // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
         // http.ClientRequest in node.js
-        console.error( JSON.parse(error.request) );
-      } else if (error.message) {
+        console.error(JSON.parse(error.request));
+    } else if (error.message) {
         // Something happened in setting up the request that triggered an Error
         console.error('Error', error.message);
-      } else {
-          try {
-            console.error( JSON.parse(error) );
-          } catch (err) {
-            console.error(error);  
-          }
-      }
-      if (error.config) {
+    } else {
+        try {
+            console.error(JSON.parse(error));
+        } catch (err) {
+            console.error(error);
+        }
+    }
+    if (error.config) {
         console.error(error.config);
-      }
-      console.log(`---------- end sap-cf-destconn ---------`);
+    }
+    console.log(`---------- end sap-cf-destconn ---------`);
 }
