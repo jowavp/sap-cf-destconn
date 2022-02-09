@@ -20,11 +20,12 @@
   },
   "homepage": "https://github.com/jowavp/sap-cf-destconn#readme",
   "dependencies": {
-    "@sap/xsenv": "^3.1.0",
-    "axios": "^0.21.1"
+    "@sap/xsenv": "^3.2.0",
+    "axios": "^0.25.0"
   },
   "devDependencies": {
     "@types/axios": "^0.14.0",
-    "@types/sap__xsenv": "^2.0.2"
+    "@types/node": "^17.0.16",
+    "@types/sap__xsenv": "^2.0.3"
   }
 }

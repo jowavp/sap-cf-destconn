@@ -18,7 +18,7 @@ export async function readSubaccountDestination<T extends IDestinationConfigurat
     const access_token = await createToken(getService(), subscribedSubdomain);
 
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
-    const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : null;
+    const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
     return getSubaccountDestination<T>(access_token, destinationName, getService(), jwtToken);
 
 }
@@ -211,15 +211,19 @@ async function getDestination<T extends IDestinationConfiguration>(access_token:
     }
 }
 
-async function getSubaccountDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | null): Promise<T> {
+async function getSubaccountDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | undefined): Promise<T> {
     try {
+
+        const headers: { [key: string]: string } = {
+            'Authorization': `Bearer ${access_token}`,
+        }
+
+        if (jwtToken) headers['X-user-token'] = jwtToken;
+
         const response = await axios({
             url: `${ds.uri}/destination-configuration/v1/subaccountDestinations/${destinationName}`,
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${access_token}`,
-                'X-user-token': jwtToken
-            },
+            headers,
             responseType: 'json',
         });
         return response.data;
