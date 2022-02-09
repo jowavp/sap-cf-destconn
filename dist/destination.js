@@ -40,7 +40,7 @@ function readDestination(destinationName, authorizationHeader, subscribedSubdoma
     return __awaiter(this, void 0, void 0, function* () {
         const access_token = yield createToken(getService(), subscribedSubdomain);
         // if we have a JWT token, we send it to the destination service to generate the new authorization header
-        const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : null;
+        const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
         return getDestination(access_token, destinationName, getService(), jwtToken);
     });
 }
@@ -207,13 +207,16 @@ function fetchDestination(access_token, destinationName, ds, jwtToken) {
                 }
             }
         }
+        const headers = {
+            'Authorization': `Bearer ${access_token}`
+        };
+        if (jwtToken) {
+            headers['X-user-token'] = jwtToken;
+        }
         const destination = (yield axios_1.default({
             url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${access_token}`,
-                'X-user-token': jwtToken
-            },
+            headers,
             responseType: 'json',
         })).data;
         // console.log(destination);
