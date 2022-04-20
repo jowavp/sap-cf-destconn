@@ -22,7 +22,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logAxiosError = exports.readSubaccountDestinations = exports.readSubaccountDestination = exports.readDestination = void 0;
+exports.logAxiosError = exports.readSubaccountDestinations2 = exports.readSubaccountDestination = exports.readDestination = void 0;
 const axios_1 = __importDefault(require("axios"));
 const xsenv = __importStar(require("@sap/xsenv"));
 const tokenCache = __importStar(require("./tokenCache"));
@@ -41,13 +41,13 @@ async function readSubaccountDestination(destinationName, authorizationHeader, s
     return getSubaccountDestination(access_token, destinationName, getService(), jwtToken);
 }
 exports.readSubaccountDestination = readSubaccountDestination;
-async function readSubaccountDestinations(authorizationHeader, subscribedSubdomain) {
+async function readSubaccountDestinations2(authorizationHeader, subscribedSubdomain, regex) {
     const access_token = await createToken(getService(), subscribedSubdomain);
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
     const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
-    return getSubaccountDestinations(access_token, getService(), jwtToken);
+    return getSubaccountDestinations(access_token, getService(), jwtToken, regex);
 }
-exports.readSubaccountDestinations = readSubaccountDestinations;
+exports.readSubaccountDestinations2 = readSubaccountDestinations2;
 class MockDestination {
     constructor(o, token) {
         this.name = o.name;
@@ -134,7 +134,7 @@ async function getDestination(access_token, destinationName, ds, jwtToken) {
         throw `Unable to read the destination ${destinationName}`;
     }
 }
-async function getSubaccountDestinations(access_token, ds, jwtToken) {
+async function getSubaccountDestinations(access_token, ds, jwtToken, regex) {
     try {
         const headers = {
             'Authorization': `Bearer ${access_token}`,
@@ -147,6 +147,9 @@ async function getSubaccountDestinations(access_token, ds, jwtToken) {
             headers,
             responseType: 'json',
         });
+        if (regex) {
+            response.data = response.data.filter((destination) => (destination.Name.match(regex)));
+        }
         return response.data;
     }
     catch (e) {

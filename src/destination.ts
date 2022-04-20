@@ -23,13 +23,13 @@ export async function readSubaccountDestination<T extends IDestinationConfigurat
 
 }
 
-export async function readSubaccountDestinations<T extends IDestinationConfiguration>(authorizationHeader?: string, subscribedSubdomain?: string) {
+export async function readSubaccountDestinations2<T extends IDestinationConfiguration>(authorizationHeader?: string, subscribedSubdomain?: string, regex?: string) : Promise<T[]> {
 
     const access_token = await createToken(getService(), subscribedSubdomain);
 
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
     const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
-    return getSubaccountDestinations<T>(access_token, getService(), jwtToken);
+    return getSubaccountDestinations<T>(access_token, getService(), jwtToken, regex);
 
 }
 
@@ -224,7 +224,7 @@ async function getDestination<T extends IDestinationConfiguration>(access_token:
 }
 
 
-async function getSubaccountDestinations<T extends IDestinationConfiguration>(access_token: string, ds: IDestinationService, jwtToken: string | undefined): Promise<T> {
+async function getSubaccountDestinations<T extends IDestinationConfiguration>(access_token: string, ds: IDestinationService, jwtToken: string | undefined, regex?: string): Promise<T[]> {
     try {
 
         const headers: { [key: string]: string } = {
@@ -239,6 +239,10 @@ async function getSubaccountDestinations<T extends IDestinationConfiguration>(ac
             headers,
             responseType: 'json',
         });
+
+        if(regex){
+            response.data = response.data.filter((destination: IDestinationConfiguration) => (destination.Name.match(regex)));
+        }
         return response.data;
     } catch (e) {
         logAxiosError(e);
