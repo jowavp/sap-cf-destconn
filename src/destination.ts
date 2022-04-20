@@ -23,7 +23,7 @@ export async function readSubaccountDestination<T extends IDestinationConfigurat
 
 }
 
-export async function readSubaccountDestinations2<T extends IDestinationConfiguration>(authorizationHeader?: string, subscribedSubdomain?: string, regex?: string) : Promise<T[]> {
+export async function readSubaccountDestinations<T extends IDestinationConfiguration>(authorizationHeader?: string, subscribedSubdomain?: string, regex?: string) : Promise<T[]> {
 
     const access_token = await createToken(getService(), subscribedSubdomain);
 
