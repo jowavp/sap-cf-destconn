@@ -23,6 +23,18 @@ export async function readSubaccountDestination<T extends IDestinationConfigurat
 
 }
 
+export async function readSubaccountDestinations<T extends IDestinationConfiguration>(authorizationHeader?: string, subscribedSubdomain?: string, regex?: string) : Promise<T[]> {
+
+    const access_token = await createToken(getService(), subscribedSubdomain);
+
+    // if we have a JWT token, we send it to the destination service to generate the new authorization header
+    const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
+    return getSubaccountDestinations<T>(access_token, getService(), jwtToken, regex);
+
+}
+
+
+
 export interface IDestinationData<T extends IDestinationConfiguration> {
     name?: string,
     owner: {
@@ -211,6 +223,33 @@ async function getDestination<T extends IDestinationConfiguration>(access_token:
     }
 }
 
+
+async function getSubaccountDestinations<T extends IDestinationConfiguration>(access_token: string, ds: IDestinationService, jwtToken: string | undefined, regex?: string): Promise<T[]> {
+    try {
+
+        const headers: { [key: string]: string } = {
+            'Authorization': `Bearer ${access_token}`,
+        }
+
+        if (jwtToken) headers['X-user-token'] = jwtToken;
+
+        const response = await axios({
+            url: `${ds.uri}/destination-configuration/v1/subaccountDestinations`,
+            method: 'GET',
+            headers,
+            responseType: 'json',
+        });
+
+        if(regex){
+            response.data = response.data.filter((destination: IDestinationConfiguration) => (destination.Name.match(regex)));
+        }
+        return response.data;
+    } catch (e) {
+        logAxiosError(e);
+        throw `Unable to read the subaccount destinations`;
+    }
+}
+
 async function getSubaccountDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | undefined): Promise<T> {
     try {
 
@@ -297,6 +336,29 @@ async function fetchDestination<T extends IDestinationConfiguration>(access_toke
 
     // console.log(destination);
     return destination;
+}
+
+
+async function fetchDestinations<T extends IDestinationConfiguration>(access_token: string, ds: IDestinationService, jwtToken: string | undefined) {
+
+
+    const headers: { [key: string]: string } = {
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    if (jwtToken) {
+        headers['X-user-token'] = jwtToken;
+    }
+
+    const destinations: IDestinationData<T> = (await axios({
+        url: `${ds.uri}/destination-configuration/v1/subaccountDestinations`,
+        method: 'GET',
+        headers,
+        responseType: 'json',
+    })).data;
+
+    // console.log(destination);
+    return destinations;
 }
 
 async function fetchToken(subscribedSubdomain: string, ds: IDestinationService) {

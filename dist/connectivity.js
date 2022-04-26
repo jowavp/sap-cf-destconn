@@ -76,7 +76,7 @@ function getService() {
     return connectivity;
 }
 async function getConnectivityToken(service) {
-    const token = (await axios_1.default({
+    const token = (await (0, axios_1.default)({
         url: `${service.url}/oauth/token`,
         method: 'POST',
         responseType: 'json',
@@ -90,7 +90,7 @@ async function getConnectivityToken(service) {
     return token;
 }
 async function getPrincipalToken(service, principalToken) {
-    const refreshToken = (await axios_1.default({
+    const refreshToken = (await (0, axios_1.default)({
         url: `${service.url}/oauth/token`,
         method: 'POST',
         responseType: 'json',
@@ -104,7 +104,7 @@ async function getPrincipalToken(service, principalToken) {
             'Authorization': principalToken
         },
     })).data.refresh_token;
-    const token = (await axios_1.default({
+    const token = (await (0, axios_1.default)({
         url: `${service.url}/oauth/token`,
         method: 'POST',
         responseType: 'json',

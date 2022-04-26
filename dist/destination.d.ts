@@ -1,5 +1,6 @@
 export declare function readDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string, subscribedSubdomain?: string): Promise<IDestinationData<T>>;
 export declare function readSubaccountDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string, subscribedSubdomain?: string): Promise<T>;
+export declare function readSubaccountDestinations<T extends IDestinationConfiguration>(authorizationHeader?: string, subscribedSubdomain?: string, regex?: string): Promise<T[]>;
 export interface IDestinationData<T extends IDestinationConfiguration> {
     name?: string;
     owner: {

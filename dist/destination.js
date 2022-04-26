@@ -22,7 +22,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logAxiosError = exports.readSubaccountDestination = exports.readDestination = void 0;
+exports.logAxiosError = exports.readSubaccountDestinations = exports.readSubaccountDestination = exports.readDestination = void 0;
 const axios_1 = __importDefault(require("axios"));
 const xsenv = __importStar(require("@sap/xsenv"));
 const tokenCache = __importStar(require("./tokenCache"));
@@ -41,6 +41,13 @@ async function readSubaccountDestination(destinationName, authorizationHeader, s
     return getSubaccountDestination(access_token, destinationName, getService(), jwtToken);
 }
 exports.readSubaccountDestination = readSubaccountDestination;
+async function readSubaccountDestinations(authorizationHeader, subscribedSubdomain, regex) {
+    const access_token = await createToken(getService(), subscribedSubdomain);
+    // if we have a JWT token, we send it to the destination service to generate the new authorization header
+    const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
+    return getSubaccountDestinations(access_token, getService(), jwtToken, regex);
+}
+exports.readSubaccountDestinations = readSubaccountDestinations;
 class MockDestination {
     constructor(o, token) {
         this.name = o.name;
@@ -127,6 +134,29 @@ async function getDestination(access_token, destinationName, ds, jwtToken) {
         throw `Unable to read the destination ${destinationName}`;
     }
 }
+async function getSubaccountDestinations(access_token, ds, jwtToken, regex) {
+    try {
+        const headers = {
+            'Authorization': `Bearer ${access_token}`,
+        };
+        if (jwtToken)
+            headers['X-user-token'] = jwtToken;
+        const response = await (0, axios_1.default)({
+            url: `${ds.uri}/destination-configuration/v1/subaccountDestinations`,
+            method: 'GET',
+            headers,
+            responseType: 'json',
+        });
+        if (regex) {
+            response.data = response.data.filter((destination) => (destination.Name.match(regex)));
+        }
+        return response.data;
+    }
+    catch (e) {
+        logAxiosError(e);
+        throw `Unable to read the subaccount destinations`;
+    }
+}
 async function getSubaccountDestination(access_token, destinationName, ds, jwtToken) {
     try {
         const headers = {
@@ -134,7 +164,7 @@ async function getSubaccountDestination(access_token, destinationName, ds, jwtTo
         };
         if (jwtToken)
             headers['X-user-token'] = jwtToken;
-        const response = await axios_1.default({
+        const response = await (0, axios_1.default)({
             url: `${ds.uri}/destination-configuration/v1/subaccountDestinations/${destinationName}`,
             method: 'GET',
             headers,
@@ -195,7 +225,7 @@ async function fetchDestination(access_token, destinationName, ds, jwtToken) {
     if (jwtToken) {
         headers['X-user-token'] = jwtToken;
     }
-    const destination = (await axios_1.default({
+    const destination = (await (0, axios_1.default)({
         url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
         method: 'GET',
         headers,
@@ -204,9 +234,25 @@ async function fetchDestination(access_token, destinationName, ds, jwtToken) {
     // console.log(destination);
     return destination;
 }
+async function fetchDestinations(access_token, ds, jwtToken) {
+    const headers = {
+        'Authorization': `Bearer ${access_token}`
+    };
+    if (jwtToken) {
+        headers['X-user-token'] = jwtToken;
+    }
+    const destinations = (await (0, axios_1.default)({
+        url: `${ds.uri}/destination-configuration/v1/subaccountDestinations`,
+        method: 'GET',
+        headers,
+        responseType: 'json',
+    })).data;
+    // console.log(destination);
+    return destinations;
+}
 async function fetchToken(subscribedSubdomain, ds) {
     const tokenBaseUrl = subscribedSubdomain ? `https://${subscribedSubdomain}.${ds.uaadomain}` : ds.url;
-    const token = (await axios_1.default({
+    const token = (await (0, axios_1.default)({
         url: `${tokenBaseUrl}/oauth/token`,
         method: 'POST',
         responseType: 'json',
