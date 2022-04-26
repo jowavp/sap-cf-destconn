@@ -5,35 +5,28 @@ import * as tokenCache from './tokenCache';
 import * as destinationCache from './destinationCache';
 
 export async function readDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string, subscribedSubdomain?: string) {
-
     const access_token = await createToken(getService(), subscribedSubdomain);
+
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
     const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
     return getDestination<T>(access_token, destinationName, getService(), jwtToken);
-
 }
 
 export async function readSubaccountDestination<T extends IDestinationConfiguration>(destinationName: string, authorizationHeader?: string, subscribedSubdomain?: string) {
-
     const access_token = await createToken(getService(), subscribedSubdomain);
 
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
     const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
     return getSubaccountDestination<T>(access_token, destinationName, getService(), jwtToken);
-
 }
 
-export async function readSubaccountDestinations<T extends IDestinationConfiguration>(authorizationHeader?: string, subscribedSubdomain?: string, regex?: string) : Promise<T[]> {
-
+export async function readSubaccountDestinations<T extends IDestinationConfiguration>(authorizationHeader?: string, subscribedSubdomain?: string, regex?: string): Promise<T[]> {
     const access_token = await createToken(getService(), subscribedSubdomain);
 
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
     const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
     return getSubaccountDestinations<T>(access_token, getService(), jwtToken, regex);
-
 }
-
-
 
 export interface IDestinationData<T extends IDestinationConfiguration> {
     name?: string,
@@ -240,7 +233,7 @@ async function getSubaccountDestinations<T extends IDestinationConfiguration>(ac
             responseType: 'json',
         });
 
-        if(regex){
+        if (regex) {
             response.data = response.data.filter((destination: IDestinationConfiguration) => (destination.Name.match(regex)));
         }
         return response.data;
