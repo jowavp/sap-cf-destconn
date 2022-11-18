@@ -16,7 +16,7 @@ export interface IConnectivityConfig {
     onpremise_proxy_http_port?: number,
     access_token?: string,
     onpremise_proxy_ldap_port?: number,
-	onpremise_socks5_proxy_port?: number,
+    onpremise_socks5_proxy_port?: number,
     onpremise_proxy_rfc_port?: number
 }
 
@@ -55,7 +55,7 @@ export async function readConnectivity(locationId?: string, principalToken?: str
         onpremise_proxy_port: parseInt(connectivityService.onpremise_proxy_port, 10),
         onpremise_proxy_http_port: parseInt(connectivityService.onpremise_proxy_http_port, 10),
         onpremise_proxy_ldap_port: parseInt(connectivityService.onpremise_proxy_ldap_port, 10),
-	    onpremise_socks5_proxy_port: parseInt(connectivityService.onpremise_socks5_proxy_port, 10),
+        onpremise_socks5_proxy_port: parseInt(connectivityService.onpremise_socks5_proxy_port, 10),
         onpremise_proxy_rfc_port: parseInt(connectivityService.onpremise_proxy_rfc_port, 10)
 
     }
@@ -69,15 +69,15 @@ export async function readConnectivity(locationId?: string, principalToken?: str
 }
 
 async function createToken(service: IConnectivityService, principalToken?: string): Promise<string> {
-    
+
     const cacheKey = `${service.clientid}__${principalToken}`;
     const cachedToken = tokenCache.getToken(cacheKey);
 
-    if(cachedToken) {
+    if (cachedToken) {
         return cachedToken.access_token;
     }
-    
-    const tokenPromise = await tokenCache.setToken(cacheKey, principalToken ? getPrincipalToken(service, principalToken): getConnectivityToken(service));
+
+    const tokenPromise = await tokenCache.setToken(cacheKey, principalToken ? getPrincipalToken(service, principalToken) : getConnectivityToken(service));
     return tokenPromise ? tokenPromise.access_token : "";
 };
 
@@ -92,10 +92,10 @@ function getService(): IConnectivityService {
         throw ('No connectivity service available');
     }
 
-    return connectivity;
+    return <IConnectivityService>connectivity;
 }
 
-async function getConnectivityToken (service: IConnectivityService) {
+async function getConnectivityToken(service: IConnectivityService) {
     const token: tokenCache.IOauthToken = (await axios({
         url: `${service.url}/oauth/token`,
         method: 'POST',
@@ -110,8 +110,8 @@ async function getConnectivityToken (service: IConnectivityService) {
     return token;
 }
 
-async function getPrincipalToken (service: IConnectivityService, principalToken: string) {
-    
+async function getPrincipalToken(service: IConnectivityService, principalToken: string) {
+
     const refreshToken = (await axios({
         url: `${service.url}/oauth/token`,
         method: 'POST',

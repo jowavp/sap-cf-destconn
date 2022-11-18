@@ -27,10 +27,10 @@ exports.setToken = setToken;
 async function cleanCache() {
     // 1 hour ago
     // const tokenlifetimeago = new Date().getTime() - (60 * 60 * 1000);
-    const fiveMinutesAgo = new Date().getTime() - (5 * 60 * 1000);
+    const now = new Date().getTime();
     Object.entries(tokens).forEach(function ([key, value]) {
         // if( value.requested.getTime() < tokenlifetimeago ) {
-        if (value.validUntil < fiveMinutesAgo) {
+        if (value.validUntil < now) {
             delete tokens[key];
         }
     });

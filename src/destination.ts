@@ -296,7 +296,7 @@ function getService(): IDestinationService {
         throw ('No destination service available');
     }
 
-    return destination;
+    return <IDestinationService>destination;
 }
 
 async function fetchDestination<T extends IDestinationConfiguration>(access_token: string, destinationName: string, ds: IDestinationService, jwtToken: string | undefined) {
