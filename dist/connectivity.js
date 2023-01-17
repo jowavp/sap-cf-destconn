@@ -31,7 +31,7 @@ const axios_1 = __importDefault(require("axios"));
 const xsenv = __importStar(require("@sap/xsenv"));
 const tokenCache = __importStar(require("./tokenCache"));
 var tokens = {};
-async function readConnectivity(locationId, principalToken) {
+async function readConnectivity(locationId, principalToken, principalPropagation = true) {
     const connectivityService = getService();
     const access_token = await createToken(connectivityService, principalToken);
     const proxy = {
@@ -39,11 +39,16 @@ async function readConnectivity(locationId, principalToken) {
         port: parseInt(connectivityService.onpremise_proxy_port, 10),
         protocol: 'http'
     };
+    const headers = !principalToken && principalPropagation ?
+        // technical user = client ID from connectivity service.
+        {
+            'SAP-Connectivity-Technical-Authentication': `Bearer ${access_token}`
+        } : {
+        "Proxy-Authorization": `Bearer ${access_token}`
+    };
     const result = {
         proxy,
-        headers: {
-            'Proxy-Authorization': `Bearer ${access_token}`
-        },
+        headers,
         access_token,
         onpremise_proxy_host: connectivityService.onpremise_proxy_host,
         onpremise_proxy_port: parseInt(connectivityService.onpremise_proxy_port, 10),

@@ -7,7 +7,8 @@ var tokens = {};
 export interface IConnectivityConfig {
     proxy: AxiosProxyConfig,
     headers: {
-        'Proxy-Authorization': string;
+        'Proxy-Authorization'?: string;
+        'SAP-Connectivity-Technical-Authentication'?: string;
         'SAP-Connectivity-SCC-Location_ID'?: string;
     },
 
@@ -36,7 +37,7 @@ interface IConnectivityService {
     onpremise_proxy_http_port: string;
 }
 
-export async function readConnectivity(locationId?: string, principalToken?: string) {
+export async function readConnectivity(locationId?: string, principalToken?: string, principalPropagation: boolean = true) {
     const connectivityService = getService();
     const access_token = await createToken(connectivityService, principalToken);
     const proxy: AxiosProxyConfig = {
@@ -45,11 +46,17 @@ export async function readConnectivity(locationId?: string, principalToken?: str
         protocol: 'http'
     };
 
+    const headers = !principalToken && principalPropagation ?
+        // technical user = client ID from connectivity service.
+        {
+            'SAP-Connectivity-Technical-Authentication': `Bearer ${access_token}`
+        } : {
+            "Proxy-Authorization": `Bearer ${access_token}`
+        };
+
     const result: IConnectivityConfig = {
         proxy,
-        headers: {
-            'Proxy-Authorization': `Bearer ${access_token}`
-        },
+        headers,
         access_token,
         onpremise_proxy_host: connectivityService.onpremise_proxy_host,
         onpremise_proxy_port: parseInt(connectivityService.onpremise_proxy_port, 10),
