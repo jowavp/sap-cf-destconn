@@ -14,4 +14,4 @@ export interface IConnectivityConfig {
     onpremise_socks5_proxy_port?: number;
     onpremise_proxy_rfc_port?: number;
 }
-export declare function readConnectivity(locationId?: string, principalToken?: string, principalPropagation?: boolean): Promise<IConnectivityConfig>;
+export declare function readConnectivity(locationId?: string, principalToken?: string, principalPropagation?: boolean, subscribedDomain?: string): Promise<IConnectivityConfig>;

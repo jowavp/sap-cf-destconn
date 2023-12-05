@@ -1,4 +1,4 @@
-export declare type IOauthToken = {
+export type IOauthToken = {
     "access_token": string;
     "token_type": string;
     "expires_in": number;

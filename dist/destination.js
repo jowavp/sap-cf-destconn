@@ -34,21 +34,27 @@ const destinationCache = __importStar(require("./destinationCache"));
 async function readDestination(destinationName, authorizationHeader, subscribedSubdomain) {
     const access_token = await createToken(getService(), subscribedSubdomain);
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
-    const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
+    const jwtToken = /bearer /i.test(authorizationHeader || "")
+        ? (authorizationHeader || "").replace(/bearer /i, "")
+        : undefined;
     return getDestination(access_token, destinationName, getService(), jwtToken);
 }
 exports.readDestination = readDestination;
 async function readSubaccountDestination(destinationName, authorizationHeader, subscribedSubdomain) {
     const access_token = await createToken(getService(), subscribedSubdomain);
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
-    const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
+    const jwtToken = /bearer /i.test(authorizationHeader || "")
+        ? (authorizationHeader || "").replace(/bearer /i, "")
+        : undefined;
     return getSubaccountDestination(access_token, destinationName, getService(), jwtToken);
 }
 exports.readSubaccountDestination = readSubaccountDestination;
 async function readSubaccountDestinations(authorizationHeader, subscribedSubdomain, regex) {
     const access_token = await createToken(getService(), subscribedSubdomain);
     // if we have a JWT token, we send it to the destination service to generate the new authorization header
-    const jwtToken = /bearer /i.test(authorizationHeader || "") ? (authorizationHeader || "").replace(/bearer /i, "") : undefined;
+    const jwtToken = /bearer /i.test(authorizationHeader || "")
+        ? (authorizationHeader || "").replace(/bearer /i, "")
+        : undefined;
     return getSubaccountDestinations(access_token, getService(), jwtToken, regex);
 }
 exports.readSubaccountDestinations = readSubaccountDestinations;
@@ -76,16 +82,21 @@ class MockDestination {
     }
     getAuthTokens() {
         if (this.getAuthenthicationType() === "BasicAuthentication") {
-            return [{
+            return [
+                {
                     type: "Basic",
-                    value: Buffer.from(this.username + ":" + this.password).toString("base64")
-                }];
+                    value: Buffer.from(this.username + ":" + this.password).toString("base64"),
+                },
+            ];
         }
-        if (this.getAuthenthicationType() === "OAuth2UserTokenExchange" && this.token) {
-            return [{
+        if (this.getAuthenthicationType() === "OAuth2UserTokenExchange" &&
+            this.token) {
+            return [
+                {
                     type: "Bearer",
-                    value: this.token.replace('Bearer', '').replace('bearer', '')
-                }];
+                    value: this.token.replace("Bearer", "").replace("bearer", ""),
+                },
+            ];
         }
         return [];
     }
@@ -93,7 +104,7 @@ class MockDestination {
         return {
             owner: {
                 SubaccountId: "local",
-                InstanceId: "Local"
+                InstanceId: "Local",
             },
             destinationConfiguration: {
                 URL: this.url,
@@ -112,9 +123,9 @@ class MockDestination {
                 Name: this.name,
                 Type: "HTTP",
                 WebIDEUsage: "odata",
-                WebIDEEnabled: "false"
+                WebIDEEnabled: "false",
             },
-            authTokens: this.getAuthTokens()
+            authTokens: this.getAuthTokens(),
         };
     }
 }
@@ -129,9 +140,9 @@ async function getDestination(access_token, destinationName, ds, jwtToken) {
         destinationCache.set(cacheKey, destinationPromise);
         return destinationPromise;
         /*
-        destinationCache.set(cacheKey, response)
-        return (await response).data;
-        */
+            destinationCache.set(cacheKey, response)
+            return (await response).data;
+            */
     }
     catch (e) {
         logAxiosError(e);
@@ -141,18 +152,18 @@ async function getDestination(access_token, destinationName, ds, jwtToken) {
 async function getSubaccountDestinations(access_token, ds, jwtToken, regex) {
     try {
         const headers = {
-            'Authorization': `Bearer ${access_token}`,
+            Authorization: `Bearer ${access_token}`,
         };
         if (jwtToken)
-            headers['X-user-token'] = jwtToken;
+            headers["X-user-token"] = jwtToken;
         const response = await (0, axios_1.default)({
             url: `${ds.uri}/destination-configuration/v1/subaccountDestinations`,
-            method: 'GET',
+            method: "GET",
             headers,
-            responseType: 'json',
+            responseType: "json",
         });
         if (regex) {
-            response.data = response.data.filter((destination) => (destination.Name.match(regex)));
+            response.data = response.data.filter((destination) => destination.Name.match(regex));
         }
         return response.data;
     }
@@ -164,15 +175,15 @@ async function getSubaccountDestinations(access_token, ds, jwtToken, regex) {
 async function getSubaccountDestination(access_token, destinationName, ds, jwtToken) {
     try {
         const headers = {
-            'Authorization': `Bearer ${access_token}`,
+            Authorization: `Bearer ${access_token}`,
         };
         if (jwtToken)
-            headers['X-user-token'] = jwtToken;
+            headers["X-user-token"] = jwtToken;
         const response = await (0, axios_1.default)({
             url: `${ds.uri}/destination-configuration/v1/subaccountDestinations/${destinationName}`,
-            method: 'GET',
+            method: "GET",
             headers,
-            responseType: 'json',
+            responseType: "json",
         });
         return response.data;
     }
@@ -189,7 +200,7 @@ async function createToken(ds, subscribedSubdomain = "") {
             const tokenPromise = fetchToken(subscribedSubdomain, ds);
             const token = await tokenCache.setToken(cacheKey, tokenPromise);
             if (!token) {
-                throw 'unable to fetch oauth token for destination service';
+                throw "unable to fetch oauth token for destination service";
             }
             return token.access_token;
         }
@@ -197,18 +208,17 @@ async function createToken(ds, subscribedSubdomain = "") {
     }
     catch (e) {
         logAxiosError(e);
-        throw 'unable to fetch oauth token for destination service';
+        throw "unable to fetch oauth token for destination service";
     }
 }
-;
 function getService() {
     const { destination } = xsenv.getServices({
         destination: {
-            tag: 'destination'
-        }
+            tag: "destination",
+        },
     });
     if (!destination) {
-        throw ('No destination service available');
+        throw "No destination service available";
     }
     return destination;
 }
@@ -218,54 +228,55 @@ async function fetchDestination(access_token, destinationName, ds, jwtToken) {
         if (destinations && Array.isArray(destinations)) {
             const destination = destinations.find((d) => d.name === destinationName);
             if (destination) {
-                //@ts-ignore
-                return new Promise((resolve) => resolve(new MockDestination(destination, access_token).getDestination()));
+                return new MockDestination(destination, access_token).getDestination();
             }
         }
     }
     const headers = {
-        'Authorization': `Bearer ${access_token}`
+        Authorization: `Bearer ${access_token}`,
     };
     if (jwtToken) {
-        headers['X-user-token'] = jwtToken;
+        headers["X-user-token"] = jwtToken;
     }
     const destination = (await (0, axios_1.default)({
         url: `${ds.uri}/destination-configuration/v1/destinations/${destinationName}`,
-        method: 'GET',
+        method: "GET",
         headers,
-        responseType: 'json',
+        responseType: "json",
     })).data;
     // console.log(destination);
     return destination;
 }
 async function fetchDestinations(access_token, ds, jwtToken) {
     const headers = {
-        'Authorization': `Bearer ${access_token}`
+        Authorization: `Bearer ${access_token}`,
     };
     if (jwtToken) {
-        headers['X-user-token'] = jwtToken;
+        headers["X-user-token"] = jwtToken;
     }
     const destinations = (await (0, axios_1.default)({
         url: `${ds.uri}/destination-configuration/v1/subaccountDestinations`,
-        method: 'GET',
+        method: "GET",
         headers,
-        responseType: 'json',
+        responseType: "json",
     })).data;
     // console.log(destination);
     return destinations;
 }
 async function fetchToken(subscribedSubdomain, ds) {
-    const tokenBaseUrl = subscribedSubdomain ? `https://${subscribedSubdomain}.${ds.uaadomain}` : ds.url;
+    const tokenBaseUrl = subscribedSubdomain
+        ? `https://${subscribedSubdomain}.${ds.uaadomain}`
+        : ds.url;
     const token = (await (0, axios_1.default)({
         url: `${tokenBaseUrl}/oauth/token`,
-        method: 'POST',
-        responseType: 'json',
+        method: "POST",
+        responseType: "json",
         data: `client_id=${encodeURIComponent(ds.clientid)}&grant_type=client_credentials`,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         auth: {
             username: ds.clientid,
-            password: ds.clientsecret
-        }
+            password: ds.clientsecret,
+        },
     })).data;
     return token;
 }
@@ -286,7 +297,7 @@ function logAxiosError(error) {
     }
     else if (error.message) {
         // Something happened in setting up the request that triggered an Error
-        console.error('Error', error.message);
+        console.error("Error", error.message);
     }
     else {
         try {

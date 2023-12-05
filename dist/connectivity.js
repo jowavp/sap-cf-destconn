@@ -31,9 +31,9 @@ const axios_1 = __importDefault(require("axios"));
 const xsenv = __importStar(require("@sap/xsenv"));
 const tokenCache = __importStar(require("./tokenCache"));
 var tokens = {};
-async function readConnectivity(locationId, principalToken, principalPropagation = true) {
+async function readConnectivity(locationId, principalToken, principalPropagation = true, subscribedDomain) {
     const connectivityService = getService();
-    const access_token = await createToken(connectivityService, principalToken);
+    const access_token = await createToken(connectivityService, principalToken, subscribedDomain);
     const proxy = {
         host: connectivityService.onpremise_proxy_host,
         port: parseInt(connectivityService.onpremise_proxy_port, 10),
@@ -63,13 +63,13 @@ async function readConnectivity(locationId, principalToken, principalPropagation
     return result;
 }
 exports.readConnectivity = readConnectivity;
-async function createToken(service, principalToken) {
+async function createToken(service, principalToken, subscribedDomain) {
     const cacheKey = `${service.clientid}__${principalToken}`;
     const cachedToken = tokenCache.getToken(cacheKey);
     if (cachedToken) {
         return cachedToken.access_token;
     }
-    const tokenPromise = await tokenCache.setToken(cacheKey, principalToken ? getPrincipalToken(service, principalToken) : getConnectivityToken(service));
+    const tokenPromise = await tokenCache.setToken(cacheKey, principalToken ? getPrincipalToken(service, principalToken, subscribedDomain) : getConnectivityToken(service, subscribedDomain));
     return tokenPromise ? tokenPromise.access_token : "";
 }
 ;
@@ -84,9 +84,9 @@ function getService() {
     }
     return connectivity;
 }
-async function getConnectivityToken(service) {
+async function getConnectivityToken(service, subscribedDomain) {
     const token = (await (0, axios_1.default)({
-        url: `${service.url}/oauth/token`,
+        url: subscribedDomain ? `https://${subscribedDomain}.${service.uaadomain}/oauth/token` : `${service.url}/oauth/token`,
         method: 'POST',
         responseType: 'json',
         data: `client_id=${encodeURIComponent(service.clientid)}&grant_type=client_credentials`,
@@ -98,9 +98,9 @@ async function getConnectivityToken(service) {
     })).data;
     return token;
 }
-async function getPrincipalToken(service, principalToken) {
+async function getPrincipalToken(service, principalToken, subscribedDomain) {
     const refreshToken = (await (0, axios_1.default)({
-        url: `${service.url}/oauth/token`,
+        url: subscribedDomain ? `https://${subscribedDomain}.${service.uaadomain}/oauth/token` : `${service.url}/oauth/token`,
         method: 'POST',
         responseType: 'json',
         params: {
@@ -114,7 +114,7 @@ async function getPrincipalToken(service, principalToken) {
         },
     })).data.refresh_token;
     const token = (await (0, axios_1.default)({
-        url: `${service.url}/oauth/token`,
+        url: subscribedDomain ? `https://${subscribedDomain}.${service.uaadomain}/oauth/token` : `${service.url}/oauth/token`,
         method: 'POST',
         responseType: 'json',
         params: {
